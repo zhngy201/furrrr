@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <title>后台管理</title>
+  <style>
+    body { font-family: system-ui, Arial; max-width: 800px; margin: 40px auto; }
+    input, textarea { width: 100%; margin: 6px 0; padding: 8px; }
+    button { padding: 8px 12px; }
+    li { margin: 8px 0; }
+  </style>
+</head>
+<body>
+  <h1>后台：内容管理</h1>
+
+  <input id="title" placeholder="标题" />
+  <textarea id="content" placeholder="内容"></textarea>
+  <button onclick="addItem()">新增</button>
+
+  <ul id="list"></ul>
+
+<script>
+const API = "https://zhij-api.3474662825.workers.dev";
+
+async function load() {
+  const res = await fetch(API + "/api/items");
+  const rows = await res.json();
+  document.getElementById("list").innerHTML = rows.map(r => `
+    <li>
+      <b>${escapeHtml(r.title)}</b> - ${escapeHtml(r.content || "")}
+      <button onclick="del(${r.id})">删除</button>
+    </li>
+  `).join("");
+}
+
+async function addItem() {
+  const title = document.getElementById("title").value;
+  const content = document.getElementById("content").value;
+
+  await fetch(API + "/api/items", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ title, content, status: "published" })
+  });
+
+  document.getElementById("title").value = "";
+  document.getElementById("content").value = "";
+  load();
+}
+
+async function del(id) {
+  await fetch(API + "/api/items/" + id, { method: "DELETE" });
+  load();
+}
+
+function escapeHtml(s) {
+  return (s ?? "").toString()
+    .replaceAll("&", "&amp;").replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;").replaceAll('"', "&quot;");
+}
+
+load();
+</script>
+</body>
+</html>
