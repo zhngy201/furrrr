@@ -1,65 +1,253 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
   <meta charset="utf-8" />
-  <title>后台管理</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>后台管理 - 我的博客</title>
   <style>
-    body { font-family: system-ui, Arial; max-width: 800px; margin: 40px auto; }
-    input, textarea { width: 100%; margin: 6px 0; padding: 8px; }
-    button { padding: 8px 12px; }
-    li { margin: 8px 0; }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { 
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #f5f5f5; 
+      min-height: 100vh;
+    }
+    .container { max-width: 800px; margin: 0 auto; padding: 20px; }
+    
+    /* 登录框 */
+    .login-box {
+      max-width: 400px; margin: 100px auto; background: white;
+      padding: 40px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+      text-align: center;
+    }
+    .login-box input {
+      width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ddd;
+      border-radius: 6px; font-size: 16px;
+    }
+    .login-box button {
+      width: 100%; padding: 12px; background: #07c160; color: white;
+      border: none; border-radius: 6px; font-size: 16px; cursor: pointer;
+    }
+    
+    /* 后台主界面 */
+    .header {
+      background: white; padding: 20px; border-radius: 12px;
+      margin-bottom: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+      display: flex; justify-content: space-between; align-items: center;
+    }
+    .editor {
+      background: white; padding: 24px; border-radius: 12px;
+      margin-bottom: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    }
+    .editor input, .editor textarea, .editor select {
+      width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #ddd;
+      border-radius: 6px; font-size: 14px; font-family: inherit;
+    }
+    .editor textarea { min-height: 120px; resize: vertical; }
+    .btn {
+      padding: 10px 20px; border: none; border-radius: 6px;
+      cursor: pointer; font-size: 14px; transition: 0.2s;
+    }
+    .btn-primary { background: #07c160; color: white; }
+    .btn-primary:hover { background: #06ad56; }
+    .btn-secondary { background: #f0f0f0; color: #333; margin-left: 10px; }
+    .btn-danger { background: #ff4d4f; color: white; padding: 6px 12px; font-size: 12px; }
+    .btn-edit { background: #1890ff; color: white; padding: 6px 12px; font-size: 12px; margin-right: 6px; }
+    
+    .list { background: white; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+    .item {
+      padding: 20px; border-bottom: 1px solid #f0f0f0;
+      display: flex; justify-content: space-between; align-items: start;
+    }
+    .item:last-child { border-bottom: none; }
+    .item-content { flex: 1; }
+    .item-title { font-weight: 600; font-size: 16px; margin-bottom: 6px; }
+    .item-body { color: #666; font-size: 14px; line-height: 1.5; white-space: pre-wrap; }
+    .item-meta { color: #999; font-size: 12px; margin-top: 8px; }
+    .item-actions { margin-left: 20px; }
+    .badge {
+      display: inline-block; padding: 2px 8px; border-radius: 4px;
+      font-size: 12px; margin-left: 8px;
+    }
+    .badge-published { background: #f6ffed; color: #52c41a; border: 1px solid #b7eb8f; }
+    .badge-draft { background: #fff7e6; color: #fa8c16; border: 1px solid #ffd591; }
+    
+    .hidden { display: none !important; }
   </style>
 </head>
 <body>
-  <h1>后台：内容管理</h1>
 
-  <input id="title" placeholder="标题" />
-  <textarea id="content" placeholder="内容"></textarea>
-  <button onclick="addItem()">新增</button>
+<!-- 登录界面 -->
+<div id="loginView" class="login-box">
+  <h2>🔐 后台登录</h2>
+  <p style="color: #999; margin: 10px 0 20px;">请输入管理密码</p>
+  <input type="password" id="pwd" placeholder="管理密码" onkeydown="if(event.key==='Enter')doLogin()">
+  <button onclick="doLogin()">进入后台</button>
+  <p id="loginError" style="color: red; margin-top: 10px; font-size: 14px;"></p>
+</div>
 
-  <ul id="list"></ul>
+<!-- 后台主界面 -->
+<div id="adminView" class="container hidden">
+  <div class="header">
+    <div>
+      <h1>📝 内容管理</h1>
+      <p style="color: #999; font-size: 14px;">管理网站公告和文章</p>
+    </div>
+    <button class="btn btn-secondary" onclick="logout()">退出</button>
+  </div>
+
+  <!-- 编辑器 -->
+  <div class="editor">
+    <h3 id="editorTitle">✏️ 写新内容</h3>
+    <input type="hidden" id="editId" value="">
+    <input type="text" id="title" placeholder="标题（必填）">
+    <textarea id="content" placeholder="正文内容..."></textarea>
+    <select id="status">
+      <option value="published">发布（前台可见）</option>
+      <option value="draft">草稿（前台隐藏）</option>
+    </select>
+    <div style="margin-top: 12px;">
+      <button class="btn btn-primary" onclick="saveItem()">保存</button>
+      <button class="btn btn-secondary" onclick="resetEditor()">清空</button>
+    </div>
+  </div>
+
+  <!-- 列表 -->
+  <div class="list" id="list"></div>
+</div>
 
 <script>
 const API = "https://zhij-api.3474662825.workers.dev";
+let password = "";
 
+// 登录
+function doLogin() {
+  password = document.getElementById("pwd").value;
+  if (!password) return;
+  
+  // 测试密码是否正确（请求列表）
+  fetch(API + "/api/items", {
+    headers: { "X-Admin-Password": password }
+  })
+  .then(r => {
+    if (r.ok) {
+      localStorage.setItem("admin_pwd", password);
+      showAdmin();
+    } else {
+      document.getElementById("loginError").textContent = "密码错误";
+    }
+  })
+  .catch(() => {
+    document.getElementById("loginError").textContent = "网络错误";
+  });
+}
+
+function logout() {
+  localStorage.removeItem("admin_pwd");
+  location.reload();
+}
+
+function showAdmin() {
+  document.getElementById("loginView").classList.add("hidden");
+  document.getElementById("adminView").classList.remove("hidden");
+  load();
+}
+
+// 自动登录（记住密码）
+if (localStorage.getItem("admin_pwd")) {
+  password = localStorage.getItem("admin_pwd");
+  showAdmin();
+}
+
+// 加载列表
 async function load() {
-  const res = await fetch(API + "/api/items");
+  const res = await fetch(API + "/api/items", {
+    headers: { "X-Admin-Password": password }
+  });
   const rows = await res.json();
+  
   document.getElementById("list").innerHTML = rows.map(r => `
-    <li>
-      <b>${escapeHtml(r.title)}</b> - ${escapeHtml(r.content || "")}
-      <button onclick="del(${r.id})">删除</button>
-    </li>
+    <div class="item">
+      <div class="item-content">
+        <div class="item-title">
+          ${escapeHtml(r.title)}
+          <span class="badge badge-${r.status}">${r.status === 'published' ? '已发布' : '草稿'}</span>
+        </div>
+        <div class="item-body">${escapeHtml(r.content)}</div>
+        <div class="item-meta">更新于 ${r.updated_at || r.created_at}</div>
+      </div>
+      <div class="item-actions">
+        <button class="btn btn-edit" onclick="editItem(${r.id}, '${escapeJs(r.title)}', '${escapeJs(r.content)}', '${r.status}')">编辑</button>
+        <button class="btn btn-danger" onclick="delItem(${r.id})">删除</button>
+      </div>
+    </div>
   `).join("");
 }
 
-async function addItem() {
-  const title = document.getElementById("title").value;
-  const content = document.getElementById("content").value;
-
-  await fetch(API + "/api/items", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ title, content, status: "published" })
+// 保存（新增或更新）
+async function saveItem() {
+  const id = document.getElementById("editId").value;
+  const data = {
+    title: document.getElementById("title").value,
+    content: document.getElementById("content").value,
+    status: document.getElementById("status").value
+  };
+  
+  if (!data.title.trim()) { alert("标题不能为空"); return; }
+  
+  const method = id ? "PUT" : "POST";
+  const url = id ? API + "/api/items/" + id : API + "/api/items";
+  
+  await fetch(url, {
+    method: method,
+    headers: { 
+      "Content-Type": "application/json",
+      "X-Admin-Password": password 
+    },
+    body: JSON.stringify(data)
   });
+  
+  resetEditor();
+  load();
+}
 
+// 编辑（填充到表单）
+function editItem(id, title, content, status) {
+  document.getElementById("editId").value = id;
+  document.getElementById("title").value = title;
+  document.getElementById("content").value = content;
+  document.getElementById("status").value = status;
+  document.getElementById("editorTitle").textContent = "📝 编辑内容 #" + id;
+  window.scrollTo(0, 0);
+}
+
+// 删除
+async function delItem(id) {
+  if (!confirm("确定删除这条内容吗？")) return;
+  await fetch(API + "/api/items/" + id, {
+    method: "DELETE",
+    headers: { "X-Admin-Password": password }
+  });
+  load();
+}
+
+// 重置表单
+function resetEditor() {
+  document.getElementById("editId").value = "";
   document.getElementById("title").value = "";
   document.getElementById("content").value = "";
-  load();
+  document.getElementById("status").value = "published";
+  document.getElementById("editorTitle").textContent = "✏️ 写新内容";
 }
 
-async function del(id) {
-  await fetch(API + "/api/items/" + id, { method: "DELETE" });
-  load();
-}
-
+// 工具函数
 function escapeHtml(s) {
   return (s ?? "").toString()
     .replaceAll("&", "&amp;").replaceAll("<", "&lt;")
     .replaceAll(">", "&gt;").replaceAll('"', "&quot;");
 }
-
-load();
+function escapeJs(s) {
+  return (s ?? "").toString().replace(/'/g, "\\'").replace(/\n/g, "\\n");
+}
 </script>
 </body>
 </html>
