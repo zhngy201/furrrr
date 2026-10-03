@@ -12,9 +12,11 @@
       font-family: system-ui, -apple-system, Arial, sans-serif;
     }
     body {
-      padding: 20px;
-      line-height: 1.7;
-      max-width: 1100px;
+      padding: 24px;
+      line-height: 1.75;
+    }
+    .container {
+      max-width: 960px;
       margin: 0 auto;
     }
     /* 头部：电脑左右排布，手机上下堆叠 */
@@ -22,11 +24,11 @@
       display: flex;
       justify-content: space-between;
       align-items: flex-start;
-      margin-bottom: 24px;
-      gap:16px;
+      margin-bottom: 28px;
+      gap:20px;
     }
     .title-area h1 {
-      font-size: clamp(24px,5vw,32px);
+      font-size: clamp(24px,5vw,34px);
       font-weight: 700;
       margin-bottom:4px;
     }
@@ -37,11 +39,11 @@
     }
     .nav-buttons {
       display:flex;
-      gap:8px;
+      gap:10px;
       flex-shrink:0;
     }
     .nav-buttons > button {
-      padding:7px 14px;
+      padding:8px 16px;
       border-radius: 6px;
       font-size:15px;
       cursor:pointer;
@@ -61,11 +63,11 @@
       margin-bottom:24px;
       display:flex;
       flex-wrap:wrap;
-      gap:12px;
+      gap:14px;
     }
     .action-group a {
       display:inline-block;
-      padding:9px 18px;
+      padding:10px 20px;
       background:#07c160;
       color:#fff;
       text-decoration:none;
@@ -74,15 +76,15 @@
     hr {
       border:none;
       border-bottom:1px solid #cccccc;
-      margin:16px 0 24px;
+      margin:20px 0 28px;
     }
     .content h2 {
-      font-size: clamp(20px,4vw,24px);
-      margin-bottom:12px;
+      font-size: clamp(20px,4vw,26px);
+      margin-bottom:14px;
     }
     #list {
-      padding-left:22px;
-      margin-bottom:12px;
+      padding-left:24px;
+      margin-bottom:14px;
     }
     .muted {
       color:#666;
@@ -101,38 +103,38 @@
     }
     .modal-box {
       background:#fff;
-      padding:24px;
-      border-radius:10px;
+      padding:26px;
+      border-radius:12px;
       width:100%;
       max-width:360px;
     }
     .modal-box h3{margin-bottom:16px;}
     .modal-box input {
       width:100%;
-      padding:10px;
+      padding:11px;
       margin:8px 0;
       border:1px solid #ccc;
-      border-radius:5px;
+      border-radius:6px;
       font-size:15px;
     }
     .modal-box button.submit{
       width:100%;
-      padding:10px;
+      padding:11px;
       border:none;
       background:#2277ee;
       color:white;
-      border-radius:5px;
+      border-radius:6px;
       cursor:pointer;
-      margin-top:8px;
-      font-size:15px;
+      margin-top:10px;
+      font-size:16px;
     }
     .close-btn{
       float:right;
       cursor:pointer;
-      font-size:22px;
+      font-size:24px;
       color:#777;
     }
-    .tip{margin-top:10px;text-align:center;line-height:1.6}
+    .tip{margin-top:12px;text-align:center;line-height:1.6}
     .tip-success{color:#009944}
     .tip-success a{color:#0066cc}
     .tip-error{color:#dd3333}
@@ -146,6 +148,7 @@
   </style>
 </head>
 <body>
+<div class="container">
   <div class="header-wrap">
     <div class="title-area">
       <h1>欢迎来到我的网站</h1>
@@ -157,18 +160,19 @@
     </div>
   </div>
 
-  <div class="content">
-    <div class="action-group">
-      <a href="mailto:3660846664@qq.com">邮箱建议（建议电脑）</a>
-      <a href="sms:+8615558520933">信息建议（建议手机）</a>
-    </div>
+  <div class="action-group">
+    <a href="mailto:3660846664@qq.com">邮箱建议（建议电脑）</a>
+    <a href="sms:+8615558520933">信息建议（建议手机）</a>
+  </div>
 
-    <hr>
+  <hr>
+  <div class="content">
     <h2>站点公告 / 内容列表</h2>
     <ul id="list"></ul>
     <p class="muted">提示：这里的数据来自 Cloudflare Worker + D1。</p>
     <p class="muted">&copy; 个人网站所有权</p>
   </div>
+</div>
 
   <!--登录注册弹窗-->
   <div class="mask" id="mask">
@@ -185,6 +189,7 @@
   </div>
 
 <script>
+// ✅ 这里修正API地址！！！
 const API = "https://zhij-api.3474662825.workers.dev";
 let currentType = "register";
 
