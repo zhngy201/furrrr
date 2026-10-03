@@ -14,29 +14,53 @@
       text-decoration: none;
       border-radius: 6px;
       font-size: 16px;
+      border:none;
+      cursor:pointer;
     }
     .muted { color: #666; font-size: 12px; }
     ul { padding-left: 20px; }
     li { margin: 8px 0; }
+    .box{max-width:420px;border:1px solid #ddd;padding:16px;border-radius:8px;margin:15px 0;}
+    input{width:100%;padding:9px;margin:6px 0;border:1px solid #ccc;border-radius:4px;}
+    .tip{color:#d03030;margin:8px 0;}
   </style>
 </head>
 <body>
   <h1>欢迎来到我的网站</h1>
   <h2>该网站待开发</h2>
 
+  <!-- ========== 新增：注册、登录表单区域 ========== -->
+  <div class="box">
+    <h3>账号注册</h3>
+    <div id="regTip" class="tip"></div>
+    <form id="regForm">
+      <input type="text" id="regUser" placeholder="用户名" required>
+      <input type="password" id="regPwd" placeholder="密码" required>
+      <button class="btn" type="submit">注册账号</button>
+    </form>
+  </div>
+
+  <div class="box">
+    <h3>账号登录</h3>
+    <div id="loginTip" class="tip"></div>
+    <form id="loginForm">
+      <input type="text" id="loginUser" placeholder="用户名" required>
+      <input type="password" id="loginPwd" placeholder="密码" required>
+      <button class="btn" type="submit">登录</button>
+    </form>
+  </div>
+  <!-- ============================================ -->
+
   <p>
     <a class="btn" href="mailto:3660846664@qq.com">邮箱建议（建议电脑）</a>
     &nbsp;&nbsp;
     <a class="btn" href="sms:+8615558520933">信息建议（建议手机）</a>
   </p>
-
   <h2>可用邮箱或信息进行建议，方便日后呈现</h2>
-
   <hr />
   <h2>站点公告 / 内容列表</h2>
   <ul id="list"></ul>
   <p class="muted">提示：这里的数据来自 Cloudflare Worker + D1。</p>
-
   <p>&copy; 个人网站所有权</p>
 
 <script>
@@ -50,17 +74,17 @@ function escapeHtml(s) {
     .replaceAll('"', "&quot;");
 }
 
+// 加载文章列表
 async function load() {
   try {
     const res = await fetch(API + "/api/items");
     if (!res.ok) throw new Error("HTTP " + res.status);
     const rows = await res.json();
-
     document.getElementById("list").innerHTML = rows.length
       ? rows.map(r => `
         <li>
           <b>${escapeHtml(r.title)}</b>
-          <span class="muted">(${escapeHtml(r.status || "")})</span><br/>
+          <span class="muted">(${escapeHtml(r.status || "")})</span><br />
           <span>${escapeHtml(r.content || "")}</span>
         </li>
       `).join("")
@@ -71,8 +95,47 @@ async function load() {
     console.error(e);
   }
 }
-
 load();
+
+// ========== 注册逻辑 ==========
+document.getElementById("regForm").addEventListener("submit",async function(e){
+  e.preventDefault();
+  const username = document.getElementById("regUser").value.trim();
+  const password = document.getElementById("regPwd").value.trim();
+  const tip = document.getElementById("regTip");
+  tip.innerText = "";
+  const fd = new FormData();
+  fd.append("username",username);
+  fd.append("password",password);
+  const resp = await fetch(API+"/register",{method:"POST",body:fd});
+  const text = await resp.text();
+  if(resp.ok){
+    tip.style.color="green";
+    tip.innerText="✅注册成功，请去登录！";
+  }else{
+    tip.innerText="❌注册失败，用户名已存在";
+  }
+});
+
+// ========== 登录逻辑 ==========
+document.getElementById("loginForm").addEventListener("submit",async function(e){
+  e.preventDefault();
+  const username = document.getElementById("loginUser").value.trim();
+  const password = document.getElementById("loginPwd").value.trim();
+  const tip = document.getElementById("loginTip");
+  tip.innerText = "";
+  const fd = new FormData();
+  fd.append("username",username);
+  fd.append("password",password);
+  const resp = await fetch(API+"/login",{method:"POST",body:fd,credentials:"include"});
+  const text = await resp.text();
+  if(resp.ok){
+    tip.style.color="green";
+    tip.innerText="✅登录成功！现在可以去Worker后台发文";
+  }else{
+    tip.innerText="❌账号或密码错误";
+  }
+});
 </script>
 </body>
 </html>
