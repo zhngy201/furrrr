@@ -1,32 +1,78 @@
 <!DOCTYPE html>
-<html>
-	<head>
-		<meta charset="utf-8" />
-		<title>我的网页</title>
-	</head>
-	<body>
-		<h1><P>欢迎来到我的网站</P></h1><br>
-		<h2><p>该网站待开发</p></h2><br>
-		<P><a href=mailto:3660846664@qq.com  
-		style="
-		display:inline-block;
-		padding: 12px 24px ;
-		background: #07c160;
-		color:white;
-		text-decoration: none;
-		border-radius: 6px ;
-		font-size: 16px;">邮箱建议（建议电脑）</a>
-		&nbsp;&nbsp;<a href="sms:+8615558520933"
-		style="
-		display:inline-block;
-		padding: 12px 24px ;
-		background: #07c160;
-		color:white;
-		text-decoration: none;
-		border-radius: 6px ;
-		font-size: 16px;">
-		信息建议（建议手机）</a></P>
-		<h2><p>可用邮箱或信息进行建议，方便日后呈现</p></h2>
-		<p>&copy;个人网站所有权</p>
-	</body>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>我的网页</title>
+  <style>
+    body { font-family: system-ui, Arial, sans-serif; margin: 40px; line-height: 1.6; }
+    .btn {
+      display:inline-block;
+      padding: 12px 24px;
+      background: #07c160;
+      color: white;
+      text-decoration: none;
+      border-radius: 6px;
+      font-size: 16px;
+    }
+    .muted { color: #666; font-size: 12px; }
+    ul { padding-left: 20px; }
+    li { margin: 8px 0; }
+  </style>
+</head>
+<body>
+  <h1>欢迎来到我的网站</h1>
+  <h2>该网站待开发</h2>
+
+  <p>
+    <a class="btn" href="mailto:3660846664@qq.com">邮箱建议（建议电脑）</a>
+    &nbsp;&nbsp;
+    <a class="btn" href="sms:+8615558520933">信息建议（建议手机）</a>
+  </p>
+
+  <h2>可用邮箱或信息进行建议，方便日后呈现</h2>
+
+  <hr />
+  <h2>站点公告 / 内容列表</h2>
+  <ul id="list"></ul>
+  <p class="muted">提示：这里的数据来自 Cloudflare Worker + D1。</p>
+
+  <p>&copy; 个人网站所有权</p>
+
+<script>
+const API = "https://zhij-api.3474662825.workers.dev";
+
+function escapeHtml(s) {
+  return (s ?? "").toString()
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;");
+}
+
+async function load() {
+  try {
+    const res = await fetch(API + "/api/items");
+    if (!res.ok) throw new Error("HTTP " + res.status);
+    const rows = await res.json();
+
+    document.getElementById("list").innerHTML = rows.length
+      ? rows.map(r => `
+        <li>
+          <b>${escapeHtml(r.title)}</b>
+          <span class="muted">(${escapeHtml(r.status || "")})</span><br/>
+          <span>${escapeHtml(r.content || "")}</span>
+        </li>
+      `).join("")
+      : "<li>暂无内容</li>";
+  } catch (e) {
+    document.getElementById("list").innerHTML =
+      "<li>加载失败：请检查 Worker 是否部署、D1 是否绑定、以及是否能访问 API。</li>";
+    console.error(e);
+  }
+}
+
+load();
+</script>
+</body>
 </html>
