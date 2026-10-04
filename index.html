@@ -17,19 +17,15 @@
     background: var(--bg); color: var(--text); line-height: 1.7; min-height: 100vh;
   }
   .container { max-width: 960px; margin: 0 auto; padding: 24px 20px 60px; }
-
-  header {
-    display: flex; justify-content: space-between; align-items: center;
-    gap: 16px; flex-wrap: wrap; padding: 28px 0 24px;
-  }
-  .brand h1 { font-size: clamp(24px, 5vw, 34px); font-weight: 800; letter-spacing: .5px; }
+  header { display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap; padding: 28px 0 24px; }
+  .brand h1 { font-size: clamp(24px, 5vw, 34px); font-weight: 800; }
   .brand p { color: var(--muted); font-size: 15px; margin-top: 2px; }
-  .nav-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+  .nav-actions { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
   .btn {
     display: inline-flex; align-items: center; gap: 6px;
     padding: 9px 18px; border-radius: 10px; font-size: 15px; font-weight: 600;
     cursor: pointer; text-decoration: none; border: 1px solid transparent;
-    transition: transform .06s ease, background .15s ease, box-shadow .15s ease;
+    transition: transform .06s ease, background .15s ease;
   }
   .btn:active { transform: scale(.97); }
   .btn-primary { background: var(--primary); color: #fff; box-shadow: 0 4px 12px rgba(37,99,235,.3); }
@@ -42,58 +38,36 @@
     display: inline-flex; align-items: center; justify-content: center;
     width: 34px; height: 34px; border-radius: 50%;
     background: linear-gradient(135deg, #2563eb, #7c3aed);
-    color: #fff; font-weight: 700; font-size: 15px;
+    color: #fff; font-weight: 700;
   }
   .user-chip {
     display: inline-flex; align-items: center; gap: 8px;
     padding: 5px 12px 5px 5px; background: #fff; border: 1px solid var(--border);
     border-radius: 999px; font-size: 14px; font-weight: 600; box-shadow: var(--shadow);
   }
-
   .notice {
     display: flex; gap: 12px; align-items: flex-start;
     background: linear-gradient(120deg, #eff6ff, #f5f3ff);
     border: 1px solid #dbeafe; border-radius: var(--radius);
     padding: 14px 16px; margin-bottom: 24px; font-size: 14px; color: #1e40af;
   }
-
   .section-title { font-size: 20px; font-weight: 700; margin: 8px 0 14px; }
   .card-list { display: grid; gap: 14px; }
-  .card {
-    background: var(--card); border: 1px solid var(--border);
-    border-radius: var(--radius); padding: 18px 20px; box-shadow: var(--shadow);
-  }
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px 20px; box-shadow: var(--shadow); }
   .card h3 { font-size: 17px; margin-bottom: 6px; word-break: break-all; }
   .card .meta { font-size: 12px; color: var(--muted); margin-bottom: 8px; }
   .card .body { font-size: 15px; color: #374151; white-space: pre-wrap; word-break: break-word; }
   .empty { text-align: center; color: var(--muted); padding: 40px 0; }
-  .skeleton {
-    height: 96px; border-radius: var(--radius);
-    background: linear-gradient(90deg, #eef0f4 25%, #f7f8fa 50%, #eef0f4 75%);
-    background-size: 200% 100%; animation: shimmer 1.2s infinite;
-  }
+  .skeleton { height: 96px; border-radius: var(--radius); background: linear-gradient(90deg, #eef0f4 25%, #f7f8fa 50%, #eef0f4 75%); background-size: 200% 100%; animation: shimmer 1.2s infinite; }
   @keyframes shimmer { to { background-position: -200% 0; } }
-
   footer { margin-top: 48px; text-align: center; color: var(--muted); font-size: 13px; }
-
-  .mask {
-    position: fixed; inset: 0; background: rgba(15,23,42,.5); backdrop-filter: blur(3px);
-    display: none; align-items: center; justify-content: center; z-index: 100; padding: 16px;
-  }
+  .mask { position: fixed; inset: 0; background: rgba(15,23,42,.5); backdrop-filter: blur(3px); display: none; align-items: center; justify-content: center; z-index: 100; padding: 16px; }
   .mask.show { display: flex; }
-  .modal {
-    background: #fff; border-radius: 18px; padding: 28px;
-    width: 100%; max-width: 380px; box-shadow: 0 20px 60px rgba(0,0,0,.25);
-    animation: pop .18s ease;
-  }
+  .modal { background: #fff; border-radius: 18px; padding: 28px; width: 100%; max-width: 380px; box-shadow: 0 20px 60px rgba(0,0,0,.25); animation: pop .18s ease; }
   @keyframes pop { from { transform: scale(.94); opacity: 0; } }
   .modal h3 { font-size: 19px; margin-bottom: 4px; }
   .modal .sub { font-size: 13px; color: var(--muted); margin-bottom: 16px; }
-  .modal input {
-    width: 100%; padding: 12px 14px; margin: 6px 0; font-size: 15px;
-    border: 1.5px solid var(--border); border-radius: 10px; outline: none;
-    transition: border-color .15s ease, box-shadow .15s ease;
-  }
+  .modal input { width: 100%; padding: 12px 14px; margin: 6px 0; font-size: 15px; border: 1.5px solid var(--border); border-radius: 10px; outline: none; transition: border-color .15s, box-shadow .15s; }
   .modal input:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(37,99,235,.15); }
   .modal .submit { width: 100%; padding: 12px; margin-top: 10px; font-size: 16px; border: none; }
   .modal .switch { margin-top: 14px; text-align: center; font-size: 14px; color: var(--muted); }
@@ -101,14 +75,10 @@
   .close { float: right; cursor: pointer; font-size: 22px; color: var(--muted); line-height: 1; }
   .tip { margin-top: 12px; font-size: 14px; min-height: 20px; text-align: center; }
   .tip.ok { color: var(--success); } .tip.err { color: var(--danger); }
-
-  #toast {
-    position: fixed; left: 50%; bottom: 32px; transform: translateX(-50%) translateY(20px);
-    background: #111827; color: #fff; padding: 11px 20px; border-radius: 12px;
-    font-size: 14px; opacity: 0; pointer-events: none; transition: all .25s ease; z-index: 200;
-  }
+  #toast { position: fixed; left: 50%; bottom: 32px; transform: translateX(-50%) translateY(20px); background: #111827; color: #fff; padding: 11px 20px; border-radius: 12px; font-size: 14px; opacity: 0; pointer-events: none; transition: all .25s; z-index: 200; }
   #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 </style>
+<base target="_blank">
 </head>
 <body>
 <div class="container">
@@ -125,7 +95,7 @@
 
   <div class="notice">
     <span>📢</span>
-    <span>这里是站点公告区。欢迎注册账号发布内容；请遵守法律法规与社区规范，违规内容将被下架，账号可能被限制。</span>
+    <span>欢迎注册账号发布内容；请遵守法律法规与社区规范，违规内容将被下架，账号可能被限制。</span>
   </div>
 
   <h2 class="section-title">最新内容</h2>
@@ -155,6 +125,8 @@
 
 <script>
 // ================== 配置 ==================
+// 页面和 Worker 同域部署时保持 "";
+// 如果本页面部署在 Pages(www) 而 API 在 Worker(api)，改成 "https://api.jifrshio.cc.cd"
 const API = "";
 
 // ================== 状态 ==================
@@ -163,7 +135,6 @@ let me = null;
 
 // ================== 工具 ==================
 const $ = (id) => document.getElementById(id);
-
 function esc(s) {
   return String(s ?? "").replace(/[&<>"']/g, c =>
     ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
@@ -176,6 +147,11 @@ function fmtTime(s) {
   if (!s) return "";
   const d = new Date(s);
   return isNaN(d) ? "" : d.toLocaleString("zh-CN", { hour12: false });
+}
+// 统一 fetch：带凭证 + 自定义头（后端 JSON API 校验 X-Requested-With，防 CSRF）
+async function apiFetch(path, options = {}) {
+  const headers = { "X-Requested-With": "fetch", ...(options.headers || {}) };
+  return fetch(API + path, { credentials: "include", ...options, headers });
 }
 
 // ================== 弹窗 ==================
@@ -198,7 +174,7 @@ function closeModal() { $("mask").classList.remove("show"); }
 $("mask").addEventListener("click", e => { if (e.target === $("mask")) closeModal(); });
 document.addEventListener("keydown", e => { if (e.key === "Escape") closeModal(); });
 
-// ================== 导航渲染 ==================
+// ================== 导航 ==================
 function renderNav() {
   const nav = $("navActions");
   if (!me) {
@@ -207,8 +183,15 @@ function renderNav() {
       <button class="btn btn-primary" onclick="openModal('register')">注册</button>`;
     return;
   }
+  // 封禁用户：不显示发文入口
+  if (me.banned == 1) {
+    nav.innerHTML = `
+      <span class="user-chip"><span class="avatar">!</span>账号已被限制</span>
+      <button class="btn btn-danger" onclick="logout()">退出</button>`;
+    return;
+  }
   const adminLink = me.role === "admin"
-    ? `<a class="btn btn-ghost" href="/admin" target="_blank">管理后台</a>` : "";
+    ? `<button class="btn btn-ghost" data-action="admin">管理后台</button>` : "";
   nav.innerHTML = `
     <span class="user-chip">
       <span class="avatar">${esc(me.username.slice(0, 1).toUpperCase())}</span>
@@ -218,15 +201,18 @@ function renderNav() {
     <button class="btn btn-ghost" data-action="myarticles">我的文章</button>
     ${adminLink}
     <button class="btn btn-danger" onclick="logout()">退出</button>`;
-  document.querySelectorAll('[data-action]').forEach(btn => {
-    btn.onclick = function() { handleNavAction(this.dataset.action); };
+  document.querySelectorAll("[data-action]").forEach(btn => {
+    btn.onclick = () => {
+      const map = { write: "/article/create", myarticles: "/myarticles", admin: "/admin" };
+      window.open(API + map[btn.dataset.action], "_blank");
+    };
   });
 }
 
 // ================== 数据加载 ==================
 async function loadMe() {
   try {
-    const res = await fetch("/api/me", { credentials: "include" });
+    const res = await apiFetch("/api/me");
     if (res.ok) {
       const data = await res.json();
       me = data.ok ? data.user : null;
@@ -238,20 +224,17 @@ async function loadMe() {
 async function loadItems() {
   const box = $("list");
   try {
-    const res = await fetch("/api/items");
+    const res = await fetch(API + "/api/items");
     const data = await res.json();
     const rows = data.ok ? data.items : [];
-    if (!rows.length) {
-      box.innerHTML = `<div class="empty">暂无内容，登录后发布第一篇吧 ✍️</div>`;
-      return;
-    }
-    box.innerHTML = rows.map(r => `
+    box.innerHTML = rows.length ? rows.map(r => `
       <article class="card">
         <h3>${esc(r.title)}</h3>
         <div class="meta">${fmtTime(r.created_at)}</div>
         <div class="body">${esc(r.content)}</div>
-      </article>`).join("");
-  } catch (e) {
+      </article>`).join("")
+      : `<div class="empty">暂无内容，登录后发布第一篇吧 ✍️</div>`;
+  } catch {
     box.innerHTML = `<div class="empty">加载失败：请检查 Worker 是否部署、D1 是否绑定。</div>`;
   }
 }
@@ -267,47 +250,41 @@ $("modalForm").addEventListener("submit", async function (e) {
 
   try {
     if (currentType === "login") {
-      const res = await fetch("/login", {
+      const res = await apiFetch("/login", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Accept": "application/json",
-        },
+        headers: { "Content-Type": "application/json", "Accept": "application/json" },
         body: JSON.stringify({ username, password }),
-        credentials: "include",
-        redirect: "manual",
       });
-
-      let data = {};
-      const contentType = res.headers.get("content-type") || "";
-      if (contentType.includes("application/json")) {
-        data = await res.json();
-      }
+      const data = await res.json().catch(() => ({}));
 
       if (res.ok && data.ok) {
-        tip.className = "tip ok";
-        tip.textContent = "登录成功！";
+        tip.className = "tip ok"; tip.textContent = "登录成功！";
         toast("登录成功，欢迎回来");
-        closeModal();
         await loadMe();
-        await loadItems();
+        if (!me) {
+          // cookie 没落上：通常是域名/HTTPS 问题，明确提示而不是假装成功
+          tip.className = "tip err";
+          tip.textContent = "❌ 登录状态未能保存，请确认通过 https 的 jifrshio.cc.cd 子域访问";
+        } else {
+          closeModal();
+          await loadItems();
+        }
       } else {
         tip.className = "tip err";
-        tip.textContent = "❌ " + (data.error || data.message || "登录失败，请检查用户名和密码");
+        tip.textContent = "❌ " + (data.error || "登录失败，请检查用户名和密码");
       }
       return;
     }
 
     // 注册
-    const res = await fetch("/api/register", {
+    const res = await apiFetch("/api/register", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ username, password }),
     });
-    const data = await res.json();
+    const data = await res.json().catch(() => ({}));
     if (res.ok && data.ok) {
-      tip.className = "tip ok";
-      tip.textContent = "✅ 注册成功，请登录";
+      tip.className = "tip ok"; tip.textContent = "✅ 注册成功，请登录";
       toast("注册成功！");
       setTimeout(() => openModal("login"), 700);
     } else {
@@ -319,20 +296,8 @@ $("modalForm").addEventListener("submit", async function (e) {
   }
 });
 
-async function handleNavAction(action) {
-  if (action === "write") {
-    if (!me) { openModal("login"); return; }
-    window.open("/article/create", "_blank");
-  } else if (action === "myarticles") {
-    if (!me) { openModal("login"); return; }
-    window.open("/myarticles", "_blank");
-  }
-}
-
 async function logout() {
-  try {
-    await fetch("/api/logout", { method: "POST", credentials: "include" });
-  } catch {}
+  try { await apiFetch("/api/logout", { method: "POST" }); } catch {}
   me = null;
   renderNav();
   toast("已退出登录");
