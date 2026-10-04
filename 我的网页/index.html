@@ -156,7 +156,6 @@
 <script>
 // ================== 配置 ==================
 const API = "https://api.jifrshio.cc.cd";
-const SITE_TITLE = "我的网站";
 
 // ================== 状态 ==================
 let currentType = "login";
@@ -268,13 +267,14 @@ $("modalForm").addEventListener("submit", async function (e) {
 
   try {
     if (currentType === "login") {
+      // ✅ 改成 JSON，与 Worker 后端匹配
       const res = await fetch(API + "/login", {
         method: "POST",
         headers: {
-          "Content-Type": "application/x-www-form-urlencoded",
+          "Content-Type": "application/json",
           "Accept": "application/json",
         },
-        body: "username=" + encodeURIComponent(username) + "&password=" + encodeURIComponent(password),
+        body: JSON.stringify({ username, password }),
         credentials: "include",
         redirect: "manual",
       });
@@ -299,7 +299,7 @@ $("modalForm").addEventListener("submit", async function (e) {
       return;
     }
 
-    // 注册
+    // 注册（已经是 JSON，不用改）
     const res = await fetch(API + "/api/register", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
