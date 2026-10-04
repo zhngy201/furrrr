@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
@@ -19,7 +18,6 @@
   }
   .container { max-width: 960px; margin: 0 auto; padding: 24px 20px 60px; }
 
-  /* 顶部 */
   header {
     display: flex; justify-content: space-between; align-items: center;
     gap: 16px; flex-wrap: wrap; padding: 28px 0 24px;
@@ -52,7 +50,6 @@
     border-radius: 999px; font-size: 14px; font-weight: 600; box-shadow: var(--shadow);
   }
 
-  /* 公告条 */
   .notice {
     display: flex; gap: 12px; align-items: flex-start;
     background: linear-gradient(120deg, #eff6ff, #f5f3ff);
@@ -60,7 +57,6 @@
     padding: 14px 16px; margin-bottom: 24px; font-size: 14px; color: #1e40af;
   }
 
-  /* 内容卡片 */
   .section-title { font-size: 20px; font-weight: 700; margin: 8px 0 14px; }
   .card-list { display: grid; gap: 14px; }
   .card {
@@ -80,7 +76,6 @@
 
   footer { margin-top: 48px; text-align: center; color: var(--muted); font-size: 13px; }
 
-  /* 弹窗 */
   .mask {
     position: fixed; inset: 0; background: rgba(15,23,42,.5); backdrop-filter: blur(3px);
     display: none; align-items: center; justify-content: center; z-index: 100; padding: 16px;
@@ -107,7 +102,6 @@
   .tip { margin-top: 12px; font-size: 14px; min-height: 20px; text-align: center; }
   .tip.ok { color: var(--success); } .tip.err { color: var(--danger); }
 
-  /* Toast */
   #toast {
     position: fixed; left: 50%; bottom: 32px; transform: translateX(-50%) translateY(20px);
     background: #111827; color: #fff; padding: 11px 20px; border-radius: 12px;
@@ -115,11 +109,9 @@
   }
   #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 </style>
-
 </head>
 <body>
 <div class="container">
-
   <header>
     <div class="brand">
       <h1>欢迎来到我的网站</h1>
@@ -144,7 +136,6 @@
   <footer>数据来自 Cloudflare Worker + D1 · &copy; 个人网站所有权</footer>
 </div>
 
-<!-- 登录/注册弹窗 -->
 <div class="mask" id="mask">
   <div class="modal">
     <span class="close" onclick="closeModal()">&times;</span>
@@ -169,7 +160,7 @@ const SITE_TITLE = "我的网站";
 
 // ================== 状态 ==================
 let currentType = "login";
-let me = null; // {id, username, role, banned}
+let me = null;
 
 // ================== 工具 ==================
 const $ = (id) => document.getElementById(id);
@@ -215,10 +206,6 @@ function renderNav() {
     nav.innerHTML = `
       <button class="btn btn-ghost" onclick="openModal('login')">登录</button>
       <button class="btn btn-primary" onclick="openModal('register')">注册</button>`;
-    // 绑定已登录按钮的事件委托
-    document.querySelectorAll('[data-action]').forEach(btn => {
-      btn.onclick = function() { handleNavAction(this.dataset.action); };
-    });
     return;
   }
   const adminLink = me.role === "admin"
@@ -232,6 +219,9 @@ function renderNav() {
     <button class="btn btn-ghost" data-action="myarticles">我的文章</button>
     ${adminLink}
     <button class="btn btn-danger" onclick="logout()">退出</button>`;
+  document.querySelectorAll('[data-action]').forEach(btn => {
+    btn.onclick = function() { handleNavAction(this.dataset.action); };
+  });
 }
 
 // ================== 数据加载 ==================
@@ -278,14 +268,24 @@ $("modalForm").addEventListener("submit", async function (e) {
 
   try {
     if (currentType === "login") {
-      // 使用 fetch 登录，页面不跳转，在弹窗内完成
       const res = await fetch(API + "/login", {
         method: "POST",
-        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+          "Accept": "application/json",
+        },
         body: "username=" + encodeURIComponent(username) + "&password=" + encodeURIComponent(password),
         credentials: "include",
+        redirect: "manual",
       });
-      if (res.ok) {
+
+      let data = {};
+      const contentType = res.headers.get("content-type") || "";
+      if (contentType.includes("application/json")) {
+        data = await res.json();
+      }
+
+      if (res.ok && data.ok) {
         tip.className = "tip ok";
         tip.textContent = "登录成功！";
         toast("登录成功，欢迎回来");
@@ -293,15 +293,13 @@ $("modalForm").addEventListener("submit", async function (e) {
         await loadMe();
         await loadItems();
       } else {
-        let data = {};
-        try { data = await res.json(); } catch {}
         tip.className = "tip err";
-        tip.textContent = "登录失败，请检查用户名和密码";
+        tip.textContent = "❌ " + (data.error || data.message || "登录失败，请检查用户名和密码");
       }
       return;
     }
 
-    // 注册走 JSON API（注册不需要 cookie）
+    // 注册
     const res = await fetch(API + "/api/register", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -324,12 +322,9 @@ $("modalForm").addEventListener("submit", async function (e) {
 
 async function handleNavAction(action) {
   if (action === "write") {
-    // 写文章 - 在当前页打开，先检查登录状态
     if (!me) { openModal("login"); return; }
-    // 在新标签页打开写文章页面
     window.open(API + "/article/create", "_blank");
   } else if (action === "myarticles") {
-    // 我的文章 - 在新标签页打开
     if (!me) { openModal("login"); return; }
     window.open(API + "/myarticles", "_blank");
   }
@@ -345,16 +340,6 @@ async function logout() {
 }
 
 // ================== 启动 ==================
-// 处理从 API 域跳回的状态参数
-(function handleRedirect() {
-  const p = new URLSearchParams(location.search);
-  if (p.get("login") === "ok") {
-    history.replaceState(null, "", location.pathname);
-    // /api/me 会自动识别登录态并刷新导航
-    toast("登录成功，欢迎回来 👋");
-  }
-})();
-
 loadMe();
 loadItems();
 </script>
