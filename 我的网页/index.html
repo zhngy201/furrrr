@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
@@ -114,7 +115,7 @@
   }
   #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 </style>
-<base target="_blank">
+
 </head>
 <body>
 <div class="container">
@@ -214,6 +215,10 @@ function renderNav() {
     nav.innerHTML = `
       <button class="btn btn-ghost" onclick="openModal('login')">登录</button>
       <button class="btn btn-primary" onclick="openModal('register')">注册</button>`;
+    // 绑定已登录按钮的事件委托
+    document.querySelectorAll('[data-action]').forEach(btn => {
+      btn.onclick = function() { handleNavAction(this.dataset.action); };
+    });
     return;
   }
   const adminLink = me.role === "admin"
@@ -223,8 +228,8 @@ function renderNav() {
       <span class="avatar">${esc(me.username.slice(0, 1).toUpperCase())}</span>
       ${esc(me.username)}${me.role === "admin" ? " · 管理员" : ""}
     </span>
-    <a class="btn btn-primary" href="${API}/article/create" target="_blank">写文章</a>
-    <a class="btn btn-ghost" href="${API}/myarticles" target="_blank">我的文章</a>
+    <button class="btn btn-primary" data-action="write">写文章</button>
+    <button class="btn btn-ghost" data-action="myarticles">我的文章</button>
     ${adminLink}
     <button class="btn btn-danger" onclick="logout()">退出</button>`;
 }
@@ -263,23 +268,6 @@ async function loadItems() {
 }
 
 // ================== 登录 / 注册 ==================
-// 关键：登录必须使用顶层表单提交到 API 域。
-// 原因：跨子域 XHR 种 cookie 会被浏览器当作第三方上下文拦截，
-// 顶层导航提交才是第一方上下文，session 才能写入 .jifrshio.cc.cd 并被 www 站点共享。
-function topFormPost(action, fields) {
-  const form = document.createElement("form");
-  form.method = "POST";
-  form.action = action;
-  form.target = "_top";
-  for (const [k, v] of Object.entries(fields)) {
-    const input = document.createElement("input");
-    input.type = "hidden"; input.name = k; input.value = v;
-    form.appendChild(input);
-  }
-  document.body.appendChild(form);
-  form.submit();
-}
-
 $("modalForm").addEventListener("submit", async function (e) {
   e.preventDefault();
   const username = $("username").value.trim();
@@ -290,8 +278,26 @@ $("modalForm").addEventListener("submit", async function (e) {
 
   try {
     if (currentType === "login") {
-      // 顶层提交，成功后 Worker 303 跳回本页并带 ?login=ok
-      topFormPost(API + "/login", { username, password });
+      // 使用 fetch 登录，页面不跳转，在弹窗内完成
+      const res = await fetch(API + "/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: "username=" + encodeURIComponent(username) + "&password=" + encodeURIComponent(password),
+        credentials: "include",
+      });
+      if (res.ok) {
+        tip.className = "tip ok";
+        tip.textContent = "登录成功！";
+        toast("登录成功，欢迎回来");
+        closeModal();
+        await loadMe();
+        await loadItems();
+      } else {
+        let data = {};
+        try { data = await res.json(); } catch {}
+        tip.className = "tip err";
+        tip.textContent = "登录失败，请检查用户名和密码";
+      }
       return;
     }
 
@@ -315,6 +321,19 @@ $("modalForm").addEventListener("submit", async function (e) {
     $("submitBtn").disabled = false;
   }
 });
+
+async function handleNavAction(action) {
+  if (action === "write") {
+    // 写文章 - 在当前页打开，先检查登录状态
+    if (!me) { openModal("login"); return; }
+    // 在新标签页打开写文章页面
+    window.open(API + "/article/create", "_blank");
+  } else if (action === "myarticles") {
+    // 我的文章 - 在新标签页打开
+    if (!me) { openModal("login"); return; }
+    window.open(API + "/myarticles", "_blank");
+  }
+}
 
 async function logout() {
   try {
