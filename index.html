@@ -1,277 +1,343 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>我的网页</title>
-  <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-      font-family: system-ui, -apple-system, Arial, sans-serif;
-    }
-    body {
-      padding: 24px;
-      line-height: 1.75;
-    }
-    .container {
-      max-width: 960px;
-      margin: 0 auto;
-    }
-    /* 头部：电脑左右排布，手机上下堆叠 */
-    .header-wrap {
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
-      margin-bottom: 28px;
-      gap:20px;
-    }
-    .title-area h1 {
-      font-size: clamp(24px,5vw,34px);
-      font-weight: 700;
-      margin-bottom:4px;
-    }
-    .title-area h2 {
-      font-size: clamp(16px,3vw,20px);
-      font-weight: normal;
-      color:#444;
-    }
-    .nav-buttons {
-      display:flex;
-      gap:10px;
-      flex-shrink:0;
-    }
-    .nav-buttons > button {
-      padding:8px 16px;
-      border-radius: 6px;
-      font-size:15px;
-      cursor:pointer;
-    }
-    .btn-login {
-      background:#ffffff;
-      border:1px solid #2372e8;
-      color:#2372e8;
-    }
-    .btn-register {
-      background:#2372e8;
-      border:1px solid #2372e8;
-      color:#fff;
-    }
-    /* 反馈按钮组，手机自动换行 */
-    .action-group {
-      margin-bottom:24px;
-      display:flex;
-      flex-wrap:wrap;
-      gap:14px;
-    }
-    .action-group a {
-      display:inline-block;
-      padding:10px 20px;
-      background:#07c160;
-      color:#fff;
-      text-decoration:none;
-      border-radius:6px;
-    }
-    hr {
-      border:none;
-      border-bottom:1px solid #cccccc;
-      margin:20px 0 28px;
-    }
-    .content h2 {
-      font-size: clamp(20px,4vw,26px);
-      margin-bottom:14px;
-    }
-    #list {
-      padding-left:24px;
-      margin-bottom:14px;
-    }
-    .muted {
-      color:#666;
-      font-size:14px;
-    }
-    /* 弹窗 手机适配 */
-    .mask {
-      position:fixed;
-      top:0;left:0;right:0;bottom:0;
-      background:rgba(0,0,0,0.45);
-      display:none;
-      align-items:center;
-      justify-content:center;
-      z-index:999;
-      padding:16px;
-    }
-    .modal-box {
-      background:#fff;
-      padding:26px;
-      border-radius:12px;
-      width:100%;
-      max-width:360px;
-    }
-    .modal-box h3{margin-bottom:16px;}
-    .modal-box input {
-      width:100%;
-      padding:11px;
-      margin:8px 0;
-      border:1px solid #ccc;
-      border-radius:6px;
-      font-size:15px;
-    }
-    .modal-box button.submit{
-      width:100%;
-      padding:11px;
-      border:none;
-      background:#2277ee;
-      color:white;
-      border-radius:6px;
-      cursor:pointer;
-      margin-top:10px;
-      font-size:16px;
-    }
-    .close-btn{
-      float:right;
-      cursor:pointer;
-      font-size:24px;
-      color:#777;
-    }
-    .tip{margin-top:12px;text-align:center;line-height:1.6}
-    .tip-success{color:#009944}
-    .tip-success a{color:#0066cc}
-    .tip-error{color:#dd3333}
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>我的网页</title>
+<style>
+  :root {
+    --bg: #f6f7fb; --card: #ffffff; --text: #1f2430; --muted: #6b7280;
+    --primary: #2563eb; --primary-d: #1d4ed8; --success: #16a34a; --danger: #dc2626;
+    --border: #e5e7eb; --radius: 14px;
+    --shadow: 0 1px 2px rgba(16,24,40,.06), 0 8px 24px rgba(16,24,40,.08);
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: system-ui, -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif;
+    background: var(--bg); color: var(--text); line-height: 1.7; min-height: 100vh;
+  }
+  .container { max-width: 960px; margin: 0 auto; padding: 24px 20px 60px; }
 
-    /* 小屏幕：头部改成上下排列 */
-    @media (max-width:600px){
-      .header-wrap{
-        flex-direction:column;
-      }
-    }
-  </style>
+  /* 顶部 */
+  header {
+    display: flex; justify-content: space-between; align-items: center;
+    gap: 16px; flex-wrap: wrap; padding: 28px 0 24px;
+  }
+  .brand h1 { font-size: clamp(24px, 5vw, 34px); font-weight: 800; letter-spacing: .5px; }
+  .brand p { color: var(--muted); font-size: 15px; margin-top: 2px; }
+  .nav-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+  .btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 9px 18px; border-radius: 10px; font-size: 15px; font-weight: 600;
+    cursor: pointer; text-decoration: none; border: 1px solid transparent;
+    transition: transform .06s ease, background .15s ease, box-shadow .15s ease;
+  }
+  .btn:active { transform: scale(.97); }
+  .btn-primary { background: var(--primary); color: #fff; box-shadow: 0 4px 12px rgba(37,99,235,.3); }
+  .btn-primary:hover { background: var(--primary-d); }
+  .btn-ghost { background: #fff; color: var(--primary); border-color: #bfdbfe; }
+  .btn-ghost:hover { background: #eff6ff; }
+  .btn-danger { background: #fff; color: var(--danger); border-color: #fecaca; }
+  .btn-danger:hover { background: #fef2f2; }
+  .avatar {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 34px; height: 34px; border-radius: 50%;
+    background: linear-gradient(135deg, #2563eb, #7c3aed);
+    color: #fff; font-weight: 700; font-size: 15px;
+  }
+  .user-chip {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 5px 12px 5px 5px; background: #fff; border: 1px solid var(--border);
+    border-radius: 999px; font-size: 14px; font-weight: 600; box-shadow: var(--shadow);
+  }
+
+  /* 公告条 */
+  .notice {
+    display: flex; gap: 12px; align-items: flex-start;
+    background: linear-gradient(120deg, #eff6ff, #f5f3ff);
+    border: 1px solid #dbeafe; border-radius: var(--radius);
+    padding: 14px 16px; margin-bottom: 24px; font-size: 14px; color: #1e40af;
+  }
+
+  /* 内容卡片 */
+  .section-title { font-size: 20px; font-weight: 700; margin: 8px 0 14px; }
+  .card-list { display: grid; gap: 14px; }
+  .card {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 18px 20px; box-shadow: var(--shadow);
+  }
+  .card h3 { font-size: 17px; margin-bottom: 6px; word-break: break-all; }
+  .card .meta { font-size: 12px; color: var(--muted); margin-bottom: 8px; }
+  .card .body { font-size: 15px; color: #374151; white-space: pre-wrap; word-break: break-word; }
+  .empty { text-align: center; color: var(--muted); padding: 40px 0; }
+  .skeleton {
+    height: 96px; border-radius: var(--radius);
+    background: linear-gradient(90deg, #eef0f4 25%, #f7f8fa 50%, #eef0f4 75%);
+    background-size: 200% 100%; animation: shimmer 1.2s infinite;
+  }
+  @keyframes shimmer { to { background-position: -200% 0; } }
+
+  footer { margin-top: 48px; text-align: center; color: var(--muted); font-size: 13px; }
+
+  /* 弹窗 */
+  .mask {
+    position: fixed; inset: 0; background: rgba(15,23,42,.5); backdrop-filter: blur(3px);
+    display: none; align-items: center; justify-content: center; z-index: 100; padding: 16px;
+  }
+  .mask.show { display: flex; }
+  .modal {
+    background: #fff; border-radius: 18px; padding: 28px;
+    width: 100%; max-width: 380px; box-shadow: 0 20px 60px rgba(0,0,0,.25);
+    animation: pop .18s ease;
+  }
+  @keyframes pop { from { transform: scale(.94); opacity: 0; } }
+  .modal h3 { font-size: 19px; margin-bottom: 4px; }
+  .modal .sub { font-size: 13px; color: var(--muted); margin-bottom: 16px; }
+  .modal input {
+    width: 100%; padding: 12px 14px; margin: 6px 0; font-size: 15px;
+    border: 1.5px solid var(--border); border-radius: 10px; outline: none;
+    transition: border-color .15s ease, box-shadow .15s ease;
+  }
+  .modal input:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(37,99,235,.15); }
+  .modal .submit { width: 100%; padding: 12px; margin-top: 10px; font-size: 16px; border: none; }
+  .modal .switch { margin-top: 14px; text-align: center; font-size: 14px; color: var(--muted); }
+  .modal .switch a { color: var(--primary); cursor: pointer; font-weight: 600; }
+  .close { float: right; cursor: pointer; font-size: 22px; color: var(--muted); line-height: 1; }
+  .tip { margin-top: 12px; font-size: 14px; min-height: 20px; text-align: center; }
+  .tip.ok { color: var(--success); } .tip.err { color: var(--danger); }
+
+  /* Toast */
+  #toast {
+    position: fixed; left: 50%; bottom: 32px; transform: translateX(-50%) translateY(20px);
+    background: #111827; color: #fff; padding: 11px 20px; border-radius: 12px;
+    font-size: 14px; opacity: 0; pointer-events: none; transition: all .25s ease; z-index: 200;
+  }
+  #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+</style>
+<base target="_blank">
 </head>
 <body>
 <div class="container">
-  <div class="header-wrap">
-    <div class="title-area">
+
+  <header>
+    <div class="brand">
       <h1>欢迎来到我的网站</h1>
-      <h2>该网站待开发</h2>
+      <p>用户注册 · 自由发文 · 社区内容</p>
     </div>
-    <div class="nav-buttons">
-      <button class="btn-login" onclick="openModal('login')">登录</button>
-      <button class="btn-register" onclick="openModal('register')">注册</button>
+    <div class="nav-actions" id="navActions">
+      <button class="btn btn-ghost" onclick="openModal('login')">登录</button>
+      <button class="btn btn-primary" onclick="openModal('register')">注册</button>
     </div>
+  </header>
+
+  <div class="notice">
+    <span>📢</span>
+    <span>这里是站点公告区。欢迎注册账号发布内容；请遵守法律法规与社区规范，违规内容将被下架，账号可能被限制。</span>
   </div>
 
-  <div class="action-group">
-    <a href="mailto:3660846664@qq.com">邮箱建议（建议电脑）</a>
-    <a href="sms:+8615558520933">信息建议（建议手机）</a>
+  <h2 class="section-title">最新内容</h2>
+  <div class="card-list" id="list">
+    <div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div>
   </div>
 
-  <hr>
-  <div class="content">
-    <h2>站点公告 / 内容列表</h2>
-    <ul id="list"></ul>
-    <p class="muted">提示：这里的数据来自 Cloudflare Worker + D1。</p>
-    <p class="muted">&copy; 个人网站所有权</p>
+  <footer>数据来自 Cloudflare Worker + D1 · &copy; 个人网站所有权</footer>
+</div>
+
+<!-- 登录/注册弹窗 -->
+<div class="mask" id="mask">
+  <div class="modal">
+    <span class="close" onclick="closeModal()">&times;</span>
+    <h3 id="modalTitle">登录</h3>
+    <div class="sub" id="modalSub">登录后可发布和管理文章</div>
+    <div class="tip" id="tip"></div>
+    <form id="modalForm">
+      <input type="text" id="username" placeholder="用户名" autocomplete="username" required>
+      <input type="password" id="password" placeholder="密码（至少8位）" autocomplete="current-password" required>
+      <button class="btn btn-primary submit" type="submit" id="submitBtn">登录</button>
+    </form>
+    <div class="switch" id="switchLine"></div>
   </div>
 </div>
 
-  <!--登录注册弹窗-->
-  <div class="mask" id="mask">
-    <div class="modal-box">
-      <span class="close-btn" onclick="closeModal()">×</span>
-      <h3 id="modalTitle">账号注册</h3>
-      <div id="modalTip" class="tip"></div>
-      <form id="modalForm">
-        <input type="text" id="username" placeholder="用户名" required>
-        <input type="password" id="password" placeholder="密码" required>
-        <button class="submit" type="submit">提交</button>
-      </form>
-    </div>
-  </div>
+<div id="toast"></div>
 
 <script>
-// ✅ 这里修正API地址！！！
+// ================== 配置 ==================
 const API = "https://api.jifrshio.cc.cd";
+const SITE_TITLE = "我的网站";
 
-let currentType = "register";
+// ================== 状态 ==================
+let currentType = "login";
+let me = null; // {id, username, role, banned}
 
-function openModal(type){
+// ================== 工具 ==================
+const $ = (id) => document.getElementById(id);
+
+function esc(s) {
+  return String(s ?? "").replace(/[&<>"']/g, c =>
+    ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+}
+function toast(msg) {
+  const t = $("toast"); t.textContent = msg; t.classList.add("show");
+  clearTimeout(t._h); t._h = setTimeout(() => t.classList.remove("show"), 2400);
+}
+function fmtTime(s) {
+  if (!s) return "";
+  const d = new Date(s);
+  return isNaN(d) ? "" : d.toLocaleString("zh-CN", { hour12: false });
+}
+
+// ================== 弹窗 ==================
+function openModal(type) {
   currentType = type;
-  document.getElementById("modalTip").innerHTML = "";
-  document.getElementById("modalTitle").innerText = type==="register" ? "账号注册":"账号登录";
-  document.getElementById("mask").style.display="flex";
+  $("tip").className = "tip"; $("tip").textContent = "";
+  $("modalForm").reset();
+  const isLogin = type === "login";
+  $("modalTitle").textContent = isLogin ? "登录" : "注册";
+  $("modalSub").textContent = isLogin ? "登录后可发布和管理文章" : "注册即可自由发文";
+  $("submitBtn").textContent = isLogin ? "登录" : "注册";
+  $("password").autocomplete = isLogin ? "current-password" : "new-password";
+  $("switchLine").innerHTML = isLogin
+    ? '没有账号？<a onclick="openModal(\'register\')">立即注册</a>'
+    : '已有账号？<a onclick="openModal(\'login\')">直接登录</a>';
+  $("mask").classList.add("show");
+  setTimeout(() => $("username").focus(), 60);
 }
-function closeModal(){
-  document.getElementById("mask").style.display="none";
+function closeModal() { $("mask").classList.remove("show"); }
+$("mask").addEventListener("click", e => { if (e.target === $("mask")) closeModal(); });
+document.addEventListener("keydown", e => { if (e.key === "Escape") closeModal(); });
+
+// ================== 导航渲染 ==================
+function renderNav() {
+  const nav = $("navActions");
+  if (!me) {
+    nav.innerHTML = `
+      <button class="btn btn-ghost" onclick="openModal('login')">登录</button>
+      <button class="btn btn-primary" onclick="openModal('register')">注册</button>`;
+    return;
+  }
+  const adminLink = me.role === "admin"
+    ? `<a class="btn btn-ghost" href="${API}/admin" target="_blank">管理后台</a>` : "";
+  nav.innerHTML = `
+    <span class="user-chip">
+      <span class="avatar">${esc(me.username.slice(0, 1).toUpperCase())}</span>
+      ${esc(me.username)}${me.role === "admin" ? " · 管理员" : ""}
+    </span>
+    <a class="btn btn-primary" href="${API}/article/create" target="_blank">写文章</a>
+    <a class="btn btn-ghost" href="${API}/myarticles" target="_blank">我的文章</a>
+    ${adminLink}
+    <button class="btn btn-danger" onclick="logout()">退出</button>`;
 }
 
-function escapeHtml(s) {
-  return (s ?? "").toString()
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;");
+// ================== 数据加载 ==================
+async function loadMe() {
+  try {
+    const res = await fetch(API + "/api/me", { credentials: "include" });
+    if (res.ok) {
+      const data = await res.json();
+      me = data.ok ? data.user : null;
+    } else me = null;
+  } catch { me = null; }
+  renderNav();
 }
 
-async function load() {
+async function loadItems() {
+  const box = $("list");
   try {
     const res = await fetch(API + "/api/items");
-    if (!res.ok) throw new Error("HTTP " + res.status);
-    const rows = await res.json();
-    document.getElementById("list").innerHTML = rows.length
-      ? rows.map(r => `
-        <li>
-          <b>${escapeHtml(r.title)}</b>
-          <span class="muted">(${escapeHtml(r.status || "")})</span><br />
-          <span>${escapeHtml(r.content || "")}</span>
-        </li>
-      `).join("")
-      : "<li>暂无内容</li>";
+    const data = await res.json();
+    const rows = data.ok ? data.items : [];
+    if (!rows.length) {
+      box.innerHTML = `<div class="empty">暂无内容，登录后发布第一篇吧 ✍️</div>`;
+      return;
+    }
+    box.innerHTML = rows.map(r => `
+      <article class="card">
+        <h3>${esc(r.title)}</h3>
+        <div class="meta">${fmtTime(r.created_at)}</div>
+        <div class="body">${esc(r.content)}</div>
+      </article>`).join("");
   } catch (e) {
-    document.getElementById("list").innerHTML =
-      "<li>加载失败：请检查 Worker 是否部署、D1 是否绑定、以及是否能访问 API。</li>";
-    console.error(e);
+    box.innerHTML = `<div class="empty">加载失败：请检查 Worker 是否部署、D1 是否绑定。</div>`;
   }
 }
-load();
 
-document.getElementById("modalForm").addEventListener("submit",async function(e){
+// ================== 登录 / 注册 ==================
+// 关键：登录必须使用顶层表单提交到 API 域。
+// 原因：跨子域 XHR 种 cookie 会被浏览器当作第三方上下文拦截，
+// 顶层导航提交才是第一方上下文，session 才能写入 .jifrshio.cc.cd 并被 www 站点共享。
+function topFormPost(action, fields) {
+  const form = document.createElement("form");
+  form.method = "POST";
+  form.action = action;
+  form.target = "_top";
+  for (const [k, v] of Object.entries(fields)) {
+    const input = document.createElement("input");
+    input.type = "hidden"; input.name = k; input.value = v;
+    form.appendChild(input);
+  }
+  document.body.appendChild(form);
+  form.submit();
+}
+
+$("modalForm").addEventListener("submit", async function (e) {
   e.preventDefault();
-  const username = document.getElementById("username").value.trim();
-  const password = document.getElementById("password").value.trim();
-  const tipDom = document.getElementById("modalTip");
-  tipDom.innerHTML = "";
+  const username = $("username").value.trim();
+  const password = $("password").value;
+  const tip = $("tip");
+  tip.className = "tip"; tip.textContent = "";
+  $("submitBtn").disabled = true;
 
-  const fd = new FormData();
-  fd.append("username",username);
-  fd.append("password",password);
-
-  const url = currentType === "register" ? `${API}/register` : `${API}/login`;
-  const resp = await fetch(url, {
-    method:"POST",
-    body:fd,
-    credentials:"include",
-  });
-
-  if(resp.ok){
-    tipDom.className = "tip tip-success";
-    if(currentType==="register"){
-      tipDom.innerHTML = "✅注册成功！<br><a target='_blank' href='shturl.cc/4zjqw0ioKnDTZDVcvOUEhh'>👉点击跳转去登录发文</a>";
-
-      tipDom.innerText = "⚠️登录请打开上面链接，本页面无法跨域保存登录状态";
+  try {
+    if (currentType === "login") {
+      // 顶层提交，成功后 Worker 303 跳回本页并带 ?login=ok
+      topFormPost(API + "/login", { username, password });
+      return;
     }
-  }else{
-    tipDom.className = "tip tip-error";
-    if(currentType==="register"){
-      tipDom.innerText = "❌注册失败，用户名已存在";
-    }else{
-      tipDom.innerText = "❌账号密码错误";
+
+    // 注册走 JSON API（注册不需要 cookie）
+    const res = await fetch(API + "/api/register", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username, password }),
+    });
+    const data = await res.json();
+    if (res.ok && data.ok) {
+      tip.className = "tip ok";
+      tip.textContent = "✅ 注册成功，请登录";
+      toast("注册成功！");
+      setTimeout(() => openModal("login"), 700);
+    } else {
+      tip.className = "tip err";
+      tip.textContent = "❌ " + (data.error || "注册失败");
     }
+  } finally {
+    $("submitBtn").disabled = false;
   }
 });
 
-document.getElementById("mask").onclick = function(e){
-  if(e.target === this) closeModal();
+async function logout() {
+  try {
+    await fetch(API + "/api/logout", { method: "POST", credentials: "include" });
+  } catch {}
+  me = null;
+  renderNav();
+  toast("已退出登录");
 }
+
+// ================== 启动 ==================
+// 处理从 API 域跳回的状态参数
+(function handleRedirect() {
+  const p = new URLSearchParams(location.search);
+  if (p.get("login") === "ok") {
+    history.replaceState(null, "", location.pathname);
+    // /api/me 会自动识别登录态并刷新导航
+    toast("登录成功，欢迎回来 👋");
+  }
+})();
+
+loadMe();
+loadItems();
 </script>
 </body>
 </html>
