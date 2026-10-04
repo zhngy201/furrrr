@@ -208,7 +208,7 @@ function renderNav() {
     return;
   }
   const adminLink = me.role === "admin"
-    ? `<a class="btn btn-ghost" href="${API}/admin" target="_blank">管理后台</a>` : "";
+    ? `<a class="btn btn-ghost" href="/admin" target="_blank">管理后台</a>` : "";
   nav.innerHTML = `
     <span class="user-chip">
       <span class="avatar">${esc(me.username.slice(0, 1).toUpperCase())}</span>
@@ -226,7 +226,7 @@ function renderNav() {
 // ================== 数据加载 ==================
 async function loadMe() {
   try {
-    const res = await fetch(API + "/api/me", { credentials: "include" });
+    const res = await fetch("/api/me", { credentials: "include" });
     if (res.ok) {
       const data = await res.json();
       me = data.ok ? data.user : null;
@@ -238,7 +238,7 @@ async function loadMe() {
 async function loadItems() {
   const box = $("list");
   try {
-    const res = await fetch(API + "/api/items");
+    const res = await fetch("/api/items");
     const data = await res.json();
     const rows = data.ok ? data.items : [];
     if (!rows.length) {
@@ -267,8 +267,7 @@ $("modalForm").addEventListener("submit", async function (e) {
 
   try {
     if (currentType === "login") {
-      // ✅ 改成 JSON，与 Worker 后端匹配
-      const res = await fetch(API + "/login", {
+      const res = await fetch("/login", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -299,8 +298,8 @@ $("modalForm").addEventListener("submit", async function (e) {
       return;
     }
 
-    // 注册（已经是 JSON，不用改）
-    const res = await fetch(API + "/api/register", {
+    // 注册
+    const res = await fetch("/api/register", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ username, password }),
@@ -323,16 +322,16 @@ $("modalForm").addEventListener("submit", async function (e) {
 async function handleNavAction(action) {
   if (action === "write") {
     if (!me) { openModal("login"); return; }
-    window.open(API + "/article/create", "_blank");
+    window.open("/article/create", "_blank");
   } else if (action === "myarticles") {
     if (!me) { openModal("login"); return; }
-    window.open(API + "/myarticles", "_blank");
+    window.open("/myarticles", "_blank");
   }
 }
 
 async function logout() {
   try {
-    await fetch(API + "/api/logout", { method: "POST", credentials: "include" });
+    await fetch("/api/logout", { method: "POST", credentials: "include" });
   } catch {}
   me = null;
   renderNav();
