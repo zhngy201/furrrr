@@ -78,7 +78,7 @@
   #toast { position: fixed; left: 50%; bottom: 32px; transform: translateX(-50%) translateY(20px); background: #111827; color: #fff; padding: 11px 20px; border-radius: 12px; font-size: 14px; opacity: 0; pointer-events: none; transition: all .25s; z-index: 200; }
   #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 
-  /* 文章详情弹窗专属 */
+  /* 文章详情 / 用户主页 弹窗 */
   .article-modal { background: #fff; border-radius: 18px; padding: 28px; width: 100%; max-width: 680px; max-height: 88vh; overflow-y: auto; box-shadow: 0 20px 60px rgba(0,0,0,.25); animation: pop .18s ease; }
   .article-modal h3 { font-size: 22px; margin-bottom: 6px; word-break: break-word; }
   .article-modal .art-meta { font-size: 13px; color: var(--muted); margin-bottom: 16px; }
@@ -92,6 +92,13 @@
   .comment-item .cm-del { color: var(--danger); cursor: pointer; margin-left: 8px; font-size: 12px; }
   .cmt-textarea { width: 100%; padding: 10px; border: 1.5px solid var(--border); border-radius: 10px; font-size: 15px; resize: vertical; font-family: inherit; outline: none; }
   .cmt-textarea:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(37,99,235,.15); }
+  .user-profile-head { text-align: center; }
+  .user-profile-head .big { font-size: 48px; line-height: 1; margin-bottom: 8px; }
+  .user-profile-head .sub { font-size: 13px; color: var(--muted); margin-top: 8px; }
+  .art-mini { border-top: 1px solid #f0f0f0; padding: 10px 0; }
+  .art-mini a { color: #2563eb; text-decoration: none; cursor: pointer; font-weight: 600; }
+  .art-mini a:hover { text-decoration: underline; }
+  .art-mini .t { color: #888; font-size: 12px; }
 </style>
 </head>
 <body>
@@ -149,6 +156,35 @@
     <form id="cmtForm" style="margin-top:14px">
       <textarea id="cmtInput" class="cmt-textarea" rows="3" placeholder="说点什么……" maxlength="1000" required></textarea>
       <button class="btn btn-primary submit" type="submit" style="margin-top:8px;width:100%">发表评论</button>
+    </form>
+  </div>
+</div>
+
+<!-- 用户主页弹窗 -->
+<div class="mask" id="userMask">
+  <div class="article-modal" style="max-width:560px">
+    <span class="close" onclick="closeUserProfile()">&times;</span>
+    <div class="user-profile-head">
+      <div class="big">👤</div>
+      <h3 id="upTitle">加载中…</h3>
+      <p class="sub" id="upMeta"></p>
+    </div>
+    <hr>
+    <h4 id="upArtCount" style="font-size:15px;margin-bottom:10px"></h4>
+    <div id="upArtList"><div class="skeleton" style="height:56px"></div></div>
+  </div>
+</div>
+
+<!-- 申诉弹窗 -->
+<div class="mask" id="appealMask">
+  <div class="modal" style="max-width:520px">
+    <span class="close" onclick="closeAppeal()">&times;</span>
+    <h3>账号申诉</h3>
+    <div class="sub">请描述你的申诉理由，管理员会尽快处理</div>
+    <div id="appealStatusBox"></div>
+    <form id="appealForm">
+      <textarea id="appealReason" rows="5" class="cmt-textarea" placeholder="例如：我的账号被误封，因为……" maxlength="1000" required></textarea>
+      <button class="btn btn-primary submit" type="submit" style="margin-top:10px;width:100%">提交申诉</button>
     </form>
   </div>
 </div>
@@ -212,10 +248,6 @@ function closeArticle() {
 }
 $("articleMask").addEventListener("click", e => { if (e.target === $("articleMask")) closeArticle(); });
 
-document.addEventListener("keydown", e => {
-  if (e.key === "Escape") { closeModal(); closeArticle(); }
-});
-
 async function openArticle(id) {
   currentArticleId = id;
   $("artTitle").textContent = "加载中…";
@@ -241,7 +273,7 @@ async function openArticle(id) {
     }
     const a = aData.article;
     $("artTitle").textContent = a.title;
-    $("artMeta").textContent = `作者：${a.username} ｜ ${fmtTime(a.created_at)}`;
+    $("artMeta").innerHTML = `作者：<a style="color:#2563eb;text-decoration:none;cursor:pointer" onclick="closeArticle();openUserProfile(${a.user_id})">${esc(a.username)}</a> ｜ ${fmtTime(a.created_at)}`;
     $("artContent").textContent = a.content;
     renderComments(cData.ok ? cData.comments : []);
   } catch (e) {
@@ -262,7 +294,7 @@ function renderComments(list) {
     return `
     <div class="comment-item">
       <div class="cm-meta">
-        <b>${esc(c.username)}</b> ｜ ${fmtTime(c.created_at)}
+        <b style="cursor:pointer" onclick="closeArticle();openUserProfile(${c.user_id})">${esc(c.username)}</b> ｜ ${fmtTime(c.created_at)}
         ${canDel ? `<span class="cm-del" onclick="delComment(${c.id})">删除</span>` : ""}
       </div>
       <div class="cm-body">${esc(c.content)}</div>
@@ -322,6 +354,108 @@ $("cmtForm").addEventListener("submit", async (e) => {
   }
 });
 
+// ================== 用户主页弹窗 ==================
+function closeUserProfile() { $("userMask").classList.remove("show"); }
+$("userMask").addEventListener("click", e => { if (e.target === $("userMask")) closeUserProfile(); });
+
+async function openUserProfile(uid) {
+  $("upTitle").textContent = "加载中…";
+  $("upMeta").textContent = "";
+  $("upArtCount").textContent = "";
+  $("upArtList").innerHTML = `<div class="skeleton" style="height:56px"></div>`;
+  $("userMask").classList.add("show");
+  try {
+    const res = await fetch(API + "/api/user/" + uid);
+    const data = await res.json();
+    if (!data.ok) {
+      $("upTitle").textContent = "用户不存在";
+      $("upArtList").innerHTML = "";
+      return;
+    }
+    const u = data.user;
+    $("upTitle").textContent = u.username;
+    $("upMeta").textContent = `${u.role === "admin" ? "管理员" : "普通用户"} ｜ 注册于 ${fmtTime(u.created_at)} ｜ ${u.banned ? "已封禁" : "正常"}`;
+    const arts = data.articles || [];
+    $("upArtCount").textContent = "发表的文章（" + arts.length + "）";
+    if (!arts.length) {
+      $("upArtList").innerHTML = `<div style="color:#888;font-size:14px">暂无文章</div>`;
+    } else {
+      $("upArtList").innerHTML = arts.map(a => `
+        <div class="art-mini">
+          <a onclick="closeUserProfile();openArticle(${a.id})">${esc(a.title)}</a>
+          <span class="t"> ｜ ${fmtTime(a.created_at)}</span>
+        </div>`).join("");
+    }
+  } catch {
+    $("upTitle").textContent = "加载失败";
+    $("upArtList").innerHTML = "";
+  }
+}
+
+// ================== 申诉弹窗 ==================
+function closeAppeal() { $("appealMask").classList.remove("show"); }
+$("appealMask").addEventListener("click", e => { if (e.target === $("appealMask")) closeAppeal(); });
+
+async function openAppeal() {
+  $("appealReason").value = "";
+  $("appealStatusBox").innerHTML = "";
+  $("appealForm").style.display = "";
+  $("appealMask").classList.add("show");
+  if (!me) {
+    closeAppeal();
+    openModal("login");
+    return;
+  }
+  try {
+    const res = await apiFetch("/api/appeal/status");
+    const data = await res.json();
+    if (data.ok && data.appeal) {
+      const ap = data.appeal;
+      if (ap.status === "pending") {
+        $("appealStatusBox").innerHTML = `<div class="tip ok" style="text-align:left;margin-bottom:10px">你已提交过申诉，正在处理中（提交于 ${fmtTime(ap.created_at)}）</div>`;
+        $("appealForm").style.display = "none";
+      } else if (ap.status === "rejected") {
+        $("appealStatusBox").innerHTML = `<div class="tip err" style="text-align:left;margin-bottom:10px">上次申诉被拒绝：${esc(ap.admin_note || "无说明")}。你可以再次提交。</div>`;
+      } else {
+        $("appealStatusBox").innerHTML = `<div class="tip ok" style="text-align:left;margin-bottom:10px">上次申诉已通过。</div>`;
+      }
+    }
+  } catch {}
+}
+
+$("appealForm").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const reason = $("appealReason").value.trim();
+  if (!reason) return;
+  const btn = e.target.querySelector("button");
+  btn.disabled = true;
+  try {
+    const res = await apiFetch("/api/appeal", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ reason }),
+    });
+    const data = await res.json();
+    if (data.ok) {
+      toast("申诉已提交，请等待处理");
+      closeAppeal();
+    } else {
+      toast(data.error || "提交失败");
+    }
+  } catch {
+    toast("网络错误");
+  } finally {
+    btn.disabled = false;
+  }
+});
+
+// ================== ESC 关闭所有弹窗 ==================
+document.addEventListener("keydown", e => {
+  if (e.key === "Escape") {
+    closeModal(); closeArticle(); closeUserProfile(); closeAppeal();
+  }
+});
+
 // ================== 导航 ==================
 function renderNav() {
   const nav = $("navActions");
@@ -331,24 +465,24 @@ function renderNav() {
       <button class="btn btn-primary" onclick="openModal('register')">注册</button>`;
     return;
   }
-    if (me.banned == 1) {
-      nav.innerHTML = `
-        <span class="user-chip"><span class="avatar">!</span>账号已被限制</span>
-        <button class="btn btn-primary" onclick="window.open('${API}/appeal?token=' + encodeURIComponent(localStorage.getItem('token')||''), '_blank')">申诉</button>
-        <button class="btn btn-danger" onclick="logout()">退出</button>`;
-      return;
-    }
+  if (me.banned == 1) {
+    nav.innerHTML = `
+      <span class="user-chip"><span class="avatar">!</span>账号已被限制</span>
+      <button class="btn btn-primary" onclick="openAppeal()">申诉</button>
+      <button class="btn btn-danger" onclick="logout()">退出</button>`;
+    return;
+  }
   const adminLink = me.role === "admin"
     ? `<button class="btn btn-ghost" data-action="admin">管理后台</button>` : "";
-    nav.innerHTML = `
-      <span class="user-chip" style="cursor:pointer" onclick="window.open('${API}/user/${me.id}?token=' + encodeURIComponent(localStorage.getItem('token')||''), '_blank')">
-        <span class="avatar">${esc(me.username.slice(0, 1).toUpperCase())}</span>
-        ${esc(me.username)}${me.role === "admin" ? " · 管理员" : ""}
-      </span>
-      <button class="btn btn-primary" data-action="write">写文章</button>
-      <button class="btn btn-ghost" data-action="myarticles">我的文章</button>
-      ${adminLink}
-      <button class="btn btn-danger" onclick="logout()">退出</button>`;
+  nav.innerHTML = `
+    <span class="user-chip" style="cursor:pointer" onclick="openUserProfile(${me.id})">
+      <span class="avatar">${esc(me.username.slice(0, 1).toUpperCase())}</span>
+      ${esc(me.username)}${me.role === "admin" ? " · 管理员" : ""}
+    </span>
+    <button class="btn btn-primary" data-action="write">写文章</button>
+    <button class="btn btn-ghost" data-action="myarticles">我的文章</button>
+    ${adminLink}
+    <button class="btn btn-danger" onclick="logout()">退出</button>`;
   document.querySelectorAll("[data-action]").forEach(btn => {
     btn.onclick = () => {
       const map = { write: "/article/create", myarticles: "/myarticles", admin: "/admin" };
@@ -381,17 +515,17 @@ async function loadItems() {
     const res = await fetch(API + "/api/items");
     const data = await res.json();
     const rows = data.ok ? data.items : [];
-            box.innerHTML = rows.length ? rows.map(r => `
-              <article class="card">
-                <h3 style="cursor:pointer" onclick="openArticle(${r.id})">${esc(r.title)}</h3>
-                <div class="meta">${fmtTime(r.created_at)} ｜
-                  <a href="${API}/user/${r.user_id}" target="_blank" style="color:#2563eb;text-decoration:none">${esc(r.username || "匿名")}</a>
-                </div>
-                <div class="body" style="cursor:pointer" onclick="openArticle(${r.id})">${esc(r.content)}</div>
-                <div style="margin-top:10px;font-size:13px">
-                  <span style="color:#2563eb;cursor:pointer" onclick="openArticle(${r.id})">查看评论 →</span>
-                </div>
-              </article>`).join("")
+    box.innerHTML = rows.length ? rows.map(r => `
+      <article class="card">
+        <h3 style="cursor:pointer" onclick="openArticle(${r.id})">${esc(r.title)}</h3>
+        <div class="meta">${fmtTime(r.created_at)} ｜
+          <a onclick="openUserProfile(${r.user_id})" style="cursor:pointer;color:#2563eb;text-decoration:none">${esc(r.username || "匿名")}</a>
+        </div>
+        <div class="body" style="cursor:pointer" onclick="openArticle(${r.id})">${esc(r.content)}</div>
+        <div style="margin-top:10px;font-size:13px">
+          <span style="color:#2563eb;cursor:pointer" onclick="openArticle(${r.id})">查看评论 →</span>
+        </div>
+      </article>`).join("")
       : `<div class="empty">暂无内容，登录后发布第一篇吧 ✍️</div>`;
   } catch {
     box.innerHTML = `<div class="empty">加载失败：请检查 Worker 是否部署、D1 是否绑定。</div>`;
