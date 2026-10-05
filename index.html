@@ -331,23 +331,24 @@ function renderNav() {
       <button class="btn btn-primary" onclick="openModal('register')">注册</button>`;
     return;
   }
-  if (me.banned == 1) {
-    nav.innerHTML = `
-      <span class="user-chip"><span class="avatar">!</span>账号已被限制</span>
-      <button class="btn btn-danger" onclick="logout()">退出</button>`;
-    return;
-  }
+    if (me.banned == 1) {
+      nav.innerHTML = `
+        <span class="user-chip"><span class="avatar">!</span>账号已被限制</span>
+        <button class="btn btn-primary" onclick="window.open('${API}/appeal?token=' + encodeURIComponent(localStorage.getItem('token')||''), '_blank')">申诉</button>
+        <button class="btn btn-danger" onclick="logout()">退出</button>`;
+      return;
+    }
   const adminLink = me.role === "admin"
     ? `<button class="btn btn-ghost" data-action="admin">管理后台</button>` : "";
-  nav.innerHTML = `
-    <span class="user-chip">
-      <span class="avatar">${esc(me.username.slice(0, 1).toUpperCase())}</span>
-      ${esc(me.username)}${me.role === "admin" ? " · 管理员" : ""}
-    </span>
-    <button class="btn btn-primary" data-action="write">写文章</button>
-    <button class="btn btn-ghost" data-action="myarticles">我的文章</button>
-    ${adminLink}
-    <button class="btn btn-danger" onclick="logout()">退出</button>`;
+    nav.innerHTML = `
+      <span class="user-chip" style="cursor:pointer" onclick="window.open('${API}/user/${me.id}?token=' + encodeURIComponent(localStorage.getItem('token')||''), '_blank')">
+        <span class="avatar">${esc(me.username.slice(0, 1).toUpperCase())}</span>
+        ${esc(me.username)}${me.role === "admin" ? " · 管理员" : ""}
+      </span>
+      <button class="btn btn-primary" data-action="write">写文章</button>
+      <button class="btn btn-ghost" data-action="myarticles">我的文章</button>
+      ${adminLink}
+      <button class="btn btn-danger" onclick="logout()">退出</button>`;
   document.querySelectorAll("[data-action]").forEach(btn => {
     btn.onclick = () => {
       const map = { write: "/article/create", myarticles: "/myarticles", admin: "/admin" };
@@ -380,13 +381,17 @@ async function loadItems() {
     const res = await fetch(API + "/api/items");
     const data = await res.json();
     const rows = data.ok ? data.items : [];
-    box.innerHTML = rows.length ? rows.map(r => `
-      <article class="card" style="cursor:pointer" onclick="openArticle(${r.id})">
-        <h3>${esc(r.title)}</h3>
-        <div class="meta">${fmtTime(r.created_at)}</div>
-        <div class="body">${esc(r.content)}</div>
-        <div style="margin-top:10px;font-size:13px;color:#2563eb">查看评论 →</div>
-      </article>`).join("")
+            box.innerHTML = rows.length ? rows.map(r => `
+              <article class="card">
+                <h3 style="cursor:pointer" onclick="openArticle(${r.id})">${esc(r.title)}</h3>
+                <div class="meta">${fmtTime(r.created_at)} ｜
+                  <a href="${API}/user/${r.user_id}" target="_blank" style="color:#2563eb;text-decoration:none">${esc(r.username || "匿名")}</a>
+                </div>
+                <div class="body" style="cursor:pointer" onclick="openArticle(${r.id})">${esc(r.content)}</div>
+                <div style="margin-top:10px;font-size:13px">
+                  <span style="color:#2563eb;cursor:pointer" onclick="openArticle(${r.id})">查看评论 →</span>
+                </div>
+              </article>`).join("")
       : `<div class="empty">暂无内容，登录后发布第一篇吧 ✍️</div>`;
   } catch {
     box.innerHTML = `<div class="empty">加载失败：请检查 Worker 是否部署、D1 是否绑定。</div>`;
