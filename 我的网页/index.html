@@ -77,8 +77,22 @@
   .tip.ok { color: var(--success); } .tip.err { color: var(--danger); }
   #toast { position: fixed; left: 50%; bottom: 32px; transform: translateX(-50%) translateY(20px); background: #111827; color: #fff; padding: 11px 20px; border-radius: 12px; font-size: 14px; opacity: 0; pointer-events: none; transition: all .25s; z-index: 200; }
   #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  /* 文章详情弹窗专属 */
+  .article-modal { background: #fff; border-radius: 18px; padding: 28px; width: 100%; max-width: 680px; max-height: 88vh; overflow-y: auto; box-shadow: 0 20px 60px rgba(0,0,0,.25); animation: pop .18s ease; }
+  .article-modal h3 { font-size: 22px; margin-bottom: 6px; word-break: break-word; }
+  .article-modal .art-meta { font-size: 13px; color: var(--muted); margin-bottom: 16px; }
+  .article-modal .art-body { white-space: pre-wrap; word-break: break-word; font-size: 15px; color: #374151; margin-bottom: 20px; }
+  .article-modal hr { border: none; border-top: 1px solid #eee; margin: 20px 0 14px; }
+  .article-modal h4 { font-size: 16px; margin-bottom: 10px; }
+  .comment-item { border-top: 1px solid #f0f0f0; padding: 12px 0; }
+  .comment-item .cm-meta { font-size: 13px; color: var(--muted); }
+  .comment-item .cm-meta b { color: var(--text); }
+  .comment-item .cm-body { margin-top: 5px; white-space: pre-wrap; word-break: break-word; font-size: 14px; }
+  .comment-item .cm-del { color: var(--danger); cursor: pointer; margin-left: 8px; font-size: 12px; }
+  .cmt-textarea { width: 100%; padding: 10px; border: 1.5px solid var(--border); border-radius: 10px; font-size: 15px; resize: vertical; font-family: inherit; outline: none; }
+  .cmt-textarea:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(37,99,235,.15); }
 </style>
-<base target="_blank">
 </head>
 <body>
 <div class="container">
@@ -106,6 +120,7 @@
   <footer>数据来自 Cloudflare Worker + D1 · &copy; 个人网站所有权</footer>
 </div>
 
+<!-- 登录/注册弹窗 -->
 <div class="mask" id="mask">
   <div class="modal">
     <span class="close" onclick="closeModal()">&times;</span>
@@ -121,17 +136,33 @@
   </div>
 </div>
 
+<!-- 文章详情 + 评论弹窗 -->
+<div class="mask" id="articleMask">
+  <div class="article-modal">
+    <span class="close" onclick="closeArticle()">&times;</span>
+    <h3 id="artTitle">加载中…</h3>
+    <div class="art-meta" id="artMeta"></div>
+    <div class="art-body" id="artContent"></div>
+    <hr>
+    <h4>评论 <span id="cmtCount" style="color:#888;font-weight:400"></span></h4>
+    <div id="cmtList"><div class="skeleton" style="height:56px"></div></div>
+    <form id="cmtForm" style="margin-top:14px">
+      <textarea id="cmtInput" class="cmt-textarea" rows="3" placeholder="说点什么……" maxlength="1000" required></textarea>
+      <button class="btn btn-primary submit" type="submit" style="margin-top:8px;width:100%">发表评论</button>
+    </form>
+  </div>
+</div>
+
 <div id="toast"></div>
 
 <script>
 // ================== 配置 ==================
-// 页面和 Worker 同域部署时保持 "";
-// 如果本页面部署在 Pages(www) 而 API 在 Worker(api)，改成 "https://api.jifrshio.cc.cd"
 const API = "https://api.jifrshio.cc.cd";
 
 // ================== 状态 ==================
 let currentType = "login";
 let me = null;
+let currentArticleId = null;
 
 // ================== 工具 ==================
 const $ = (id) => document.getElementById(id);
@@ -148,20 +179,14 @@ function fmtTime(s) {
   const d = new Date(s);
   return isNaN(d) ? "" : d.toLocaleString("zh-CN", { hour12: false });
 }
-// 找到这个函数，替换为：
 async function apiFetch(path, options = {}) {
   const headers = { "X-Requested-With": "fetch", ...(options.headers || {}) };
-  
-  // 从 localStorage 获取 token
   const token = localStorage.getItem("token");
-  if (token) {
-    headers["Authorization"] = `Bearer ${token}`;
-  }
-
+  if (token) headers["Authorization"] = `Bearer ${token}`;
   return fetch(API + path, { ...options, headers });
 }
 
-// ================== 弹窗 ==================
+// ================== 登录/注册弹窗 ==================
 function openModal(type) {
   currentType = type;
   $("tip").className = "tip"; $("tip").textContent = "";
@@ -179,7 +204,123 @@ function openModal(type) {
 }
 function closeModal() { $("mask").classList.remove("show"); }
 $("mask").addEventListener("click", e => { if (e.target === $("mask")) closeModal(); });
-document.addEventListener("keydown", e => { if (e.key === "Escape") closeModal(); });
+
+// ================== 文章详情弹窗 ==================
+function closeArticle() {
+  $("articleMask").classList.remove("show");
+  currentArticleId = null;
+}
+$("articleMask").addEventListener("click", e => { if (e.target === $("articleMask")) closeArticle(); });
+
+document.addEventListener("keydown", e => {
+  if (e.key === "Escape") { closeModal(); closeArticle(); }
+});
+
+async function openArticle(id) {
+  currentArticleId = id;
+  $("artTitle").textContent = "加载中…";
+  $("artMeta").textContent = "";
+  $("artContent").textContent = "";
+  $("cmtCount").textContent = "";
+  $("cmtList").innerHTML = `<div class="skeleton" style="height:56px"></div>`;
+  $("cmtInput").value = "";
+  $("articleMask").classList.add("show");
+
+  try {
+    const [aRes, cRes] = await Promise.all([
+      fetch(API + "/api/article/" + id),
+      fetch(API + "/api/article/" + id + "/comments"),
+    ]);
+    const aData = await aRes.json();
+    const cData = await cRes.json();
+
+    if (!aData.ok) {
+      $("artTitle").textContent = "文章不存在";
+      $("cmtList").innerHTML = "";
+      return;
+    }
+    const a = aData.article;
+    $("artTitle").textContent = a.title;
+    $("artMeta").textContent = `作者：${a.username} ｜ ${fmtTime(a.created_at)}`;
+    $("artContent").textContent = a.content;
+    renderComments(cData.ok ? cData.comments : []);
+  } catch (e) {
+    $("artTitle").textContent = "加载失败";
+    $("artContent").textContent = e.message;
+    $("cmtList").innerHTML = "";
+  }
+}
+
+function renderComments(list) {
+  $("cmtCount").textContent = "(" + list.length + ")";
+  if (!list.length) {
+    $("cmtList").innerHTML = `<div style="color:#888;font-size:14px;padding:8px 0">还没有评论，来抢沙发～</div>`;
+    return;
+  }
+  $("cmtList").innerHTML = list.map(c => {
+    const canDel = me && (me.id === c.user_id || me.role === "admin");
+    return `
+    <div class="comment-item">
+      <div class="cm-meta">
+        <b>${esc(c.username)}</b> ｜ ${fmtTime(c.created_at)}
+        ${canDel ? `<span class="cm-del" onclick="delComment(${c.id})">删除</span>` : ""}
+      </div>
+      <div class="cm-body">${esc(c.content)}</div>
+    </div>`;
+  }).join("");
+}
+
+async function delComment(id) {
+  if (!confirm("确定删除这条评论？")) return;
+  const res = await apiFetch("/api/comment/" + id + "/delete", { method: "POST" });
+  const data = await res.json();
+  if (data.ok) {
+    toast("已删除");
+    const cRes = await fetch(API + "/api/article/" + currentArticleId + "/comments");
+    const cData = await cRes.json();
+    renderComments(cData.ok ? cData.comments : []);
+  } else {
+    toast(data.error || "删除失败");
+  }
+}
+
+// 提交评论
+$("cmtForm").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  if (!currentArticleId) return;
+  if (!me) {
+    toast("请先登录");
+    closeArticle();
+    openModal("login");
+    return;
+  }
+  const content = $("cmtInput").value.trim();
+  if (!content) return;
+
+  const btn = e.target.querySelector("button");
+  btn.disabled = true;
+  try {
+    const res = await apiFetch("/api/article/" + currentArticleId + "/comment", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ content }),
+    });
+    const data = await res.json();
+    if (data.ok) {
+      $("cmtInput").value = "";
+      toast("评论成功");
+      const cRes = await fetch(API + "/api/article/" + currentArticleId + "/comments");
+      const cData = await cRes.json();
+      renderComments(cData.ok ? cData.comments : []);
+    } else {
+      toast(data.error || "评论失败");
+    }
+  } catch {
+    toast("网络错误");
+  } finally {
+    btn.disabled = false;
+  }
+});
 
 // ================== 导航 ==================
 function renderNav() {
@@ -190,7 +331,6 @@ function renderNav() {
       <button class="btn btn-primary" onclick="openModal('register')">注册</button>`;
     return;
   }
-  // 封禁用户：不显示发文入口
   if (me.banned == 1) {
     nav.innerHTML = `
       <span class="user-chip"><span class="avatar">!</span>账号已被限制</span>
@@ -211,18 +351,16 @@ function renderNav() {
   document.querySelectorAll("[data-action]").forEach(btn => {
     btn.onclick = () => {
       const map = { write: "/article/create", myarticles: "/myarticles", admin: "/admin" };
-            const token = localStorage.getItem("token") || "";
-            window.open(API + map[btn.dataset.action] + "?token=" + encodeURIComponent(token), "_blank");
+      const token = localStorage.getItem("token") || "";
+      window.open(API + map[btn.dataset.action] + "?token=" + encodeURIComponent(token), "_blank");
     };
   });
 }
 
 // ================== 数据加载 ==================
-// 修改 loadMe：
 async function loadMe() {
   const token = localStorage.getItem("token");
-  if (!token) { me = null; renderNav(); return; } // 没 token 直接跳过请求
-
+  if (!token) { me = null; renderNav(); return; }
   try {
     const res = await apiFetch("/api/me");
     if (res.ok) {
@@ -230,7 +368,7 @@ async function loadMe() {
       me = data.ok ? data.user : null;
     } else {
       me = null;
-      localStorage.removeItem("token"); // token 过期，清除
+      localStorage.removeItem("token");
     }
   } catch { me = null; }
   renderNav();
@@ -243,10 +381,11 @@ async function loadItems() {
     const data = await res.json();
     const rows = data.ok ? data.items : [];
     box.innerHTML = rows.length ? rows.map(r => `
-      <article class="card">
+      <article class="card" style="cursor:pointer" onclick="openArticle(${r.id})">
         <h3>${esc(r.title)}</h3>
         <div class="meta">${fmtTime(r.created_at)}</div>
         <div class="body">${esc(r.content)}</div>
+        <div style="margin-top:10px;font-size:13px;color:#2563eb">查看评论 →</div>
       </article>`).join("")
       : `<div class="empty">暂无内容，登录后发布第一篇吧 ✍️</div>`;
   } catch {
@@ -254,7 +393,7 @@ async function loadItems() {
   }
 }
 
-// ================== 登录 / 注册 ==================
+// ================== 登录/注册提交 ==================
 $("modalForm").addEventListener("submit", async function (e) {
   e.preventDefault();
   const username = $("username").value.trim();
@@ -264,35 +403,32 @@ $("modalForm").addEventListener("submit", async function (e) {
   $("submitBtn").disabled = true;
 
   try {
-    // 找到这一块，替换为：
-        if (currentType === "login") {
-          const res = await apiFetch("/login", {
-            method: "POST",
-            headers: { "Content-Type": "application/json", "Accept": "application/json" },
-            body: JSON.stringify({ username, password }),
-          });
-          const data = await res.json().catch(() => ({}));
-    
-          if (res.ok && data.ok) {
-            // 保存 Token
-            if (data.token) {
-              localStorage.setItem("token", data.token);
-            }
-            tip.className = "tip ok"; tip.textContent = "登录成功！";
-            toast("登录成功，欢迎回来");
-            await loadMe();
-            if (!me) {
-              tip.className = "tip err";
-              tip.textContent = "❌ 登录状态未能保存";
-            } else {
-              closeModal();
-              await loadItems();
-            }
-          } else {
-            // ... 原有的错误处理
-          }
-          return;
+    if (currentType === "login") {
+      const res = await apiFetch("/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "Accept": "application/json" },
+        body: JSON.stringify({ username, password }),
+      });
+      const data = await res.json().catch(() => ({}));
+
+      if (res.ok && data.ok) {
+        if (data.token) localStorage.setItem("token", data.token);
+        tip.className = "tip ok"; tip.textContent = "登录成功！";
+        toast("登录成功，欢迎回来");
+        await loadMe();
+        if (!me) {
+          tip.className = "tip err";
+          tip.textContent = "❌ 登录状态未能保存";
+        } else {
+          closeModal();
+          await loadItems();
         }
+      } else {
+        tip.className = "tip err";
+        tip.textContent = "❌ " + (data.error || "登录失败");
+      }
+      return;
+    }
 
     // 注册
     const res = await apiFetch("/api/register", {
@@ -314,10 +450,10 @@ $("modalForm").addEventListener("submit", async function (e) {
   }
 });
 
-// 修改 logout：
+// ================== 退出 ==================
 async function logout() {
   try { await apiFetch("/api/logout", { method: "POST" }); } catch {}
-  localStorage.removeItem("token"); // 清除 token
+  localStorage.removeItem("token");
   me = null;
   renderNav();
   toast("已退出登录");
