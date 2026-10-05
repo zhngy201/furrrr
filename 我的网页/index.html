@@ -211,7 +211,8 @@ function renderNav() {
   document.querySelectorAll("[data-action]").forEach(btn => {
     btn.onclick = () => {
       const map = { write: "/article/create", myarticles: "/myarticles", admin: "/admin" };
-      window.open(API + map[btn.dataset.action], "_blank");
+            const token = localStorage.getItem("token") || "";
+            window.open(API + map[btn.dataset.action] + "?token=" + encodeURIComponent(token), "_blank");
     };
   });
 }
