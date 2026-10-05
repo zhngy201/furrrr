@@ -99,6 +99,17 @@
   .art-mini a { color: #2563eb; text-decoration: none; cursor: pointer; font-weight: 600; }
   .art-mini a:hover { text-decoration: underline; }
   .art-mini .t { color: #888; font-size: 12px; }
+  .ban-banner {
+    background: linear-gradient(120deg, #fef2f2, #fee2e2);
+    border: 1px solid #fecaca; border-radius: var(--radius);
+    padding: 14px 16px; margin-bottom: 20px; font-size: 14px; color: #b91c1c;
+    display: flex; gap: 10px; align-items: center; flex-wrap: wrap;
+  }
+  .ban-banner .ban-icon { font-size: 20px; }
+  .ban-banner .ban-link {
+    margin-left: auto; color: #b91c1c; font-weight: 700;
+    text-decoration: underline; cursor: pointer;
+  }
 </style>
 </head>
 <body>
@@ -118,6 +129,9 @@
     <span>📢</span>
     <span>欢迎注册账号发布内容；请遵守法律法规与社区规范，违规内容将被下架，账号可能被限制。</span>
   </div>
+
+  <!-- ★ 新增：封禁横幅容器 -->
+  <div id="banBanner" style="display:none"></div>
 
   <h2 class="section-title">最新内容</h2>
   <div class="card-list" id="list">
@@ -214,6 +228,17 @@ function fmtTime(s) {
   if (!s) return "";
   const d = new Date(s);
   return isNaN(d) ? "" : d.toLocaleString("zh-CN", { hour12: false });
+}
+// ★ 新增：格式化封禁到期文案
+function fmtBanUntil(until) {
+  if (!until) return "永久封禁";
+  const d = new Date(until);
+  if (isNaN(d)) return "永久封禁";
+  const left = d - Date.now();
+  if (left <= 0) return "已到期（刷新后解封）";
+  const days = Math.ceil(left / 86400000);
+  const dateStr = until.slice(0, 10);
+  return `至 ${dateStr}（剩 ${days} 天）`;
 }
 async function apiFetch(path, options = {}) {
   const headers = { "X-Requested-With": "fetch", ...(options.headers || {}) };
@@ -374,7 +399,14 @@ async function openUserProfile(uid) {
     }
     const u = data.user;
     $("upTitle").textContent = u.username;
-    $("upMeta").textContent = `${u.role === "admin" ? "管理员" : "普通用户"} ｜ 注册于 ${fmtTime(u.created_at)} ｜ ${u.banned ? "已封禁" : "正常"}`;
+    // ★ 用户主页显示封禁到期
+    let banText = "正常";
+    if (u.banned) {
+      banText = u.banned_until
+        ? `已封禁（至 ${u.banned_until.slice(0, 10)}）`
+        : "已封禁（永久）";
+    }
+    $("upMeta").textContent = `${u.role === "admin" ? "管理员" : "普通用户"} ｜ 注册于 ${fmtTime(u.created_at)} ｜ ${banText}`;
     const arts = data.articles || [];
     $("upArtCount").textContent = "发表的文章（" + arts.length + "）";
     if (!arts.length) {
@@ -414,10 +446,17 @@ async function openAppeal() {
       if (ap.status === "pending") {
         $("appealStatusBox").innerHTML = `<div class="tip ok" style="text-align:left;margin-bottom:10px">你已提交过申诉，正在处理中（提交于 ${fmtTime(ap.created_at)}）</div>`;
         $("appealForm").style.display = "none";
+      } else if (ap.status === "approved") {
+        // ★ 已通过：显示管理员回信
+        $("appealStatusBox").innerHTML = `
+          <div class="tip ok" style="text-align:left;margin-bottom:10px">✅ 申诉已通过，账号已解封</div>
+          ${ap.admin_note ? `<div style="text-align:left;padding:10px;background:#f0fdf4;border-radius:8px;margin-bottom:10px;font-size:14px"><b>管理员回复：</b><br>${esc(ap.admin_note)}</div>` : ""}`;
+        $("appealForm").style.display = "none";
       } else if (ap.status === "rejected") {
-        $("appealStatusBox").innerHTML = `<div class="tip err" style="text-align:left;margin-bottom:10px">上次申诉被拒绝：${esc(ap.admin_note || "无说明")}。你可以再次提交。</div>`;
-      } else {
-        $("appealStatusBox").innerHTML = `<div class="tip ok" style="text-align:left;margin-bottom:10px">上次申诉已通过。</div>`;
+        // ★ 已拒绝：显示管理员回信，可重新提交
+        $("appealStatusBox").innerHTML = `
+          <div class="tip err" style="text-align:left;margin-bottom:10px">❌ 上次申诉被拒绝</div>
+          ${ap.admin_note ? `<div style="text-align:left;padding:10px;background:#fef2f2;border-radius:8px;margin-bottom:10px;font-size:14px"><b>管理员回复：</b><br>${esc(ap.admin_note)}</div>` : ""}`;
       }
     }
   } catch {}
@@ -459,19 +498,41 @@ document.addEventListener("keydown", e => {
 // ================== 导航 ==================
 function renderNav() {
   const nav = $("navActions");
+  const banner = $("banBanner");
+
+  // 每次渲染前先隐藏横幅
+  if (banner) banner.style.display = "none";
+
   if (!me) {
     nav.innerHTML = `
       <button class="btn btn-ghost" onclick="openModal('login')">登录</button>
       <button class="btn btn-primary" onclick="openModal('register')">注册</button>`;
     return;
   }
+
+  // ★ 封禁用户：显示具体时间 + 顶部横幅
   if (me.banned == 1) {
+    const untilText = fmtBanUntil(me.banned_until);
     nav.innerHTML = `
-      <span class="user-chip"><span class="avatar">!</span>账号已被限制</span>
+      <span class="user-chip" style="border-color:#fecaca;background:#fef2f2">
+        <span class="avatar" style="background:#dc2626">!</span>
+        已被封禁 · ${untilText}
+      </span>
       <button class="btn btn-primary" onclick="openAppeal()">申诉</button>
       <button class="btn btn-danger" onclick="logout()">退出</button>`;
+
+    if (banner) {
+      banner.style.display = "block";
+      banner.innerHTML = `
+        <div class="ban-banner">
+          <span class="ban-icon">⚠️</span>
+          <span><b>你的账号已被封禁</b> · ${untilText}，期间无法发文和评论。</span>
+          <a class="ban-link" onclick="openAppeal();return false">提交申诉 →</a>
+        </div>`;
+    }
     return;
   }
+
   const adminLink = me.role === "admin"
     ? `<button class="btn btn-ghost" data-action="admin">管理后台</button>` : "";
   nav.innerHTML = `
@@ -597,6 +658,15 @@ async function logout() {
   renderNav();
   toast("已退出登录");
 }
+
+// ================== 检测 URL 参数（来自 Worker 的操作结果）==================
+(function checkUrlParams() {
+  const p = new URLSearchParams(location.search);
+  if (p.get("published") === "1") toast("✅ 发布成功！");
+  else if (p.get("deleted") === "1") toast("已删除");
+  else if (p.get("login") === "ok") toast("登录成功");
+  if (p.toString()) history.replaceState({}, "", location.pathname);
+})();
 
 // ================== 启动 ==================
 loadMe();
