@@ -148,10 +148,17 @@ function fmtTime(s) {
   const d = new Date(s);
   return isNaN(d) ? "" : d.toLocaleString("zh-CN", { hour12: false });
 }
-// 统一 fetch：带凭证 + 自定义头（后端 JSON API 校验 X-Requested-With，防 CSRF）
+// 找到这个函数，替换为：
 async function apiFetch(path, options = {}) {
   const headers = { "X-Requested-With": "fetch", ...(options.headers || {}) };
-  return fetch(API + path, { credentials: "include", ...options, headers });
+  
+  // 从 localStorage 获取 token
+  const token = localStorage.getItem("token");
+  if (token) {
+    headers["Authorization"] = `Bearer ${token}`;
+  }
+
+  return fetch(API + path, { ...options, headers });
 }
 
 // ================== 弹窗 ==================
@@ -210,13 +217,20 @@ function renderNav() {
 }
 
 // ================== 数据加载 ==================
+// 修改 loadMe：
 async function loadMe() {
+  const token = localStorage.getItem("token");
+  if (!token) { me = null; renderNav(); return; } // 没 token 直接跳过请求
+
   try {
     const res = await apiFetch("/api/me");
     if (res.ok) {
       const data = await res.json();
       me = data.ok ? data.user : null;
-    } else me = null;
+    } else {
+      me = null;
+      localStorage.removeItem("token"); // token 过期，清除
+    }
   } catch { me = null; }
   renderNav();
 }
@@ -249,32 +263,35 @@ $("modalForm").addEventListener("submit", async function (e) {
   $("submitBtn").disabled = true;
 
   try {
-    if (currentType === "login") {
-      const res = await apiFetch("/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", "Accept": "application/json" },
-        body: JSON.stringify({ username, password }),
-      });
-      const data = await res.json().catch(() => ({}));
-
-      if (res.ok && data.ok) {
-        tip.className = "tip ok"; tip.textContent = "登录成功！";
-        toast("登录成功，欢迎回来");
-        await loadMe();
-        if (!me) {
-          // cookie 没落上：通常是域名/HTTPS 问题，明确提示而不是假装成功
-          tip.className = "tip err";
-          tip.textContent = "❌ 登录状态未能保存，请确认通过 https 的 jifrshio.cc.cd 子域访问";
-        } else {
-          closeModal();
-          await loadItems();
+    // 找到这一块，替换为：
+        if (currentType === "login") {
+          const res = await apiFetch("/login", {
+            method: "POST",
+            headers: { "Content-Type": "application/json", "Accept": "application/json" },
+            body: JSON.stringify({ username, password }),
+          });
+          const data = await res.json().catch(() => ({}));
+    
+          if (res.ok && data.ok) {
+            // 保存 Token
+            if (data.token) {
+              localStorage.setItem("token", data.token);
+            }
+            tip.className = "tip ok"; tip.textContent = "登录成功！";
+            toast("登录成功，欢迎回来");
+            await loadMe();
+            if (!me) {
+              tip.className = "tip err";
+              tip.textContent = "❌ 登录状态未能保存";
+            } else {
+              closeModal();
+              await loadItems();
+            }
+          } else {
+            // ... 原有的错误处理
+          }
+          return;
         }
-      } else {
-        tip.className = "tip err";
-        tip.textContent = "❌ " + (data.error || "登录失败，请检查用户名和密码");
-      }
-      return;
-    }
 
     // 注册
     const res = await apiFetch("/api/register", {
@@ -296,8 +313,10 @@ $("modalForm").addEventListener("submit", async function (e) {
   }
 });
 
+// 修改 logout：
 async function logout() {
   try { await apiFetch("/api/logout", { method: "POST" }); } catch {}
+  localStorage.removeItem("token"); // 清除 token
   me = null;
   renderNav();
   toast("已退出登录");
