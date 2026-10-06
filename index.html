@@ -207,7 +207,7 @@
   <div class="modal" style="max-width:460px">
     <span class="close" onclick="closeRename()">&times;</span>
     <h3>修改用户名</h3>
-    <div class="sub">3~20 位字母数字下划线 ｜ 每月最多改 3 次</div>
+	<div class="sub">3~20 位中文/字母/数字/下划线 ｜ 每月最多改 3 次</div>
     <div id="renameInfo" class="tip" style="text-align:left;margin-bottom:8px"></div>
     <form id="renameForm">
       <input type="text" id="renameInput" placeholder="新用户名" autocomplete="off" required>
@@ -265,10 +265,12 @@ function openModal(type) {
   $("tip").className = "tip"; $("tip").textContent = "";
   $("modalForm").reset();
   const isLogin = type === "login";
-  $("modalTitle").textContent = isLogin ? "登录" : "注册";
-  $("modalSub").textContent = isLogin ? "登录后可发布和管理文章" : "注册即可自由发文";
-  $("submitBtn").textContent = isLogin ? "登录" : "注册";
-  $("password").autocomplete = isLogin ? "current-password" : "new-password";
+    $("modalTitle").textContent = isLogin ? "登录" : "注册";
+    $("modalSub").textContent = isLogin ? "登录后可发布和管理文章" : "注册即可自由发文";
+    $("submitBtn").textContent = isLogin ? "登录" : "注册";
+    // ★ 注册模式下提示用户名规则（支持中文）
+    $("username").placeholder = isLogin ? "用户名" : "用户名（3~20位中文/字母/数字/下划线）";
+    $("password").autocomplete = isLogin ? "current-password" : "new-password";
   $("switchLine").innerHTML = isLogin
     ? '没有账号？<a onclick="openModal(\'register\')">立即注册</a>'
     : '已有账号？<a onclick="openModal(\'login\')">直接登录</a>';
