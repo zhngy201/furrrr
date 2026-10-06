@@ -78,7 +78,6 @@
   #toast { position: fixed; left: 50%; bottom: 32px; transform: translateX(-50%) translateY(20px); background: #111827; color: #fff; padding: 11px 20px; border-radius: 12px; font-size: 14px; opacity: 0; pointer-events: none; transition: all .25s; z-index: 200; }
   #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 
-  /* 文章详情 / 用户主页 弹窗 */
   .article-modal { background: #fff; border-radius: 18px; padding: 28px; width: 100%; max-width: 680px; max-height: 88vh; overflow-y: auto; box-shadow: 0 20px 60px rgba(0,0,0,.25); animation: pop .18s ease; }
   .article-modal h3 { font-size: 22px; margin-bottom: 6px; word-break: break-word; }
   .article-modal .art-meta { font-size: 13px; color: var(--muted); margin-bottom: 16px; }
@@ -130,7 +129,6 @@
     <span>欢迎注册账号发布内容；请遵守法律法规与社区规范，违规内容将被下架，账号可能被限制。</span>
   </div>
 
-  <!-- ★ 新增：封禁横幅容器 -->
   <div id="banBanner" style="display:none"></div>
 
   <h2 class="section-title">最新内容</h2>
@@ -182,6 +180,7 @@
       <div class="big">👤</div>
       <h3 id="upTitle">加载中…</h3>
       <p class="sub" id="upMeta"></p>
+      <div id="upActions" style="margin-top:10px"></div>
     </div>
     <hr>
     <h4 id="upArtCount" style="font-size:15px;margin-bottom:10px"></h4>
@@ -199,6 +198,20 @@
     <form id="appealForm">
       <textarea id="appealReason" rows="5" class="cmt-textarea" placeholder="例如：我的账号被误封，因为……" maxlength="1000" required></textarea>
       <button class="btn btn-primary submit" type="submit" style="margin-top:10px;width:100%">提交申诉</button>
+    </form>
+  </div>
+</div>
+
+<!-- 改名弹窗 -->
+<div class="mask" id="renameMask">
+  <div class="modal" style="max-width:460px">
+    <span class="close" onclick="closeRename()">&times;</span>
+    <h3>修改用户名</h3>
+    <div class="sub">3~20 位字母数字下划线 ｜ 每月最多改 3 次</div>
+    <div id="renameInfo" class="tip" style="text-align:left;margin-bottom:8px"></div>
+    <form id="renameForm">
+      <input type="text" id="renameInput" placeholder="新用户名" autocomplete="off" required>
+      <button class="btn btn-primary submit" type="submit" style="margin-top:10px;width:100%">确认修改</button>
     </form>
   </div>
 </div>
@@ -229,7 +242,6 @@ function fmtTime(s) {
   const d = new Date(s);
   return isNaN(d) ? "" : d.toLocaleString("zh-CN", { hour12: false });
 }
-// ★ 新增：格式化封禁到期文案
 function fmtBanUntil(until) {
   if (!until) return "永久封禁";
   const d = new Date(until);
@@ -341,7 +353,6 @@ async function delComment(id) {
   }
 }
 
-// 提交评论
 $("cmtForm").addEventListener("submit", async (e) => {
   e.preventDefault();
   if (!currentArticleId) return;
@@ -387,6 +398,7 @@ async function openUserProfile(uid) {
   $("upTitle").textContent = "加载中…";
   $("upMeta").textContent = "";
   $("upArtCount").textContent = "";
+  $("upActions").innerHTML = "";
   $("upArtList").innerHTML = `<div class="skeleton" style="height:56px"></div>`;
   $("userMask").classList.add("show");
   try {
@@ -399,7 +411,7 @@ async function openUserProfile(uid) {
     }
     const u = data.user;
     $("upTitle").textContent = u.username;
-    // ★ 用户主页显示封禁到期
+
     let banText = "正常";
     if (u.banned) {
       banText = u.banned_until
@@ -407,6 +419,15 @@ async function openUserProfile(uid) {
         : "已封禁（永久）";
     }
     $("upMeta").textContent = `${u.role === "admin" ? "管理员" : "普通用户"} ｜ 注册于 ${fmtTime(u.created_at)} ｜ ${banText}`;
+
+    // ★ 如果是自己 → 显示改名按钮
+    const actions = $("upActions");
+    if (me && me.id === uid) {
+      actions.innerHTML = `<button class="btn btn-ghost" onclick="openRename()" style="font-size:13px;padding:6px 14px">✏️ 修改用户名</button>`;
+    } else {
+      actions.innerHTML = "";
+    }
+
     const arts = data.articles || [];
     $("upArtCount").textContent = "发表的文章（" + arts.length + "）";
     if (!arts.length) {
@@ -423,6 +444,76 @@ async function openUserProfile(uid) {
     $("upArtList").innerHTML = "";
   }
 }
+
+// ================== 改名弹窗 ==================
+function closeRename() { $("renameMask").classList.remove("show"); }
+$("renameMask").addEventListener("click", e => { if (e.target === $("renameMask")) closeRename(); });
+
+async function openRename() {
+  if (!me) { toast("请先登录"); return; }
+  $("renameInput").value = "";
+  $("renameInfo").className = "tip";
+  $("renameInfo").textContent = "加载中…";
+  $("renameForm").style.display = "";
+  $("renameMask").classList.add("show");
+
+  try {
+    const res = await apiFetch("/api/username/status");
+    const data = await res.json();
+    if (!data.ok) {
+      $("renameInfo").className = "tip err";
+      $("renameInfo").textContent = data.error || "无法获取信息";
+      $("renameForm").style.display = "none";
+      return;
+    }
+    $("renameInfo").className = "tip";
+    $("renameInfo").innerHTML = `当前用户名：<b>${esc(data.current)}</b><br>本月已改 <b>${data.used_this_month}</b> 次，还可改 <b>${data.remaining}</b> 次`;
+
+    if (data.remaining <= 0) {
+      $("renameForm").style.display = "none";
+    } else {
+      $("renameInput").placeholder = "新用户名（还剩 " + data.remaining + " 次）";
+      setTimeout(() => $("renameInput").focus(), 60);
+    }
+  } catch {
+    $("renameInfo").className = "tip err";
+    $("renameInfo").textContent = "网络错误";
+  }
+}
+
+$("renameForm").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const newName = $("renameInput").value.trim();
+  if (!newName) return;
+
+  const btn = e.target.querySelector("button");
+  btn.disabled = true;
+  try {
+    const res = await apiFetch("/api/username", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username: newName }),
+    });
+    const data = await res.json();
+    if (data.ok) {
+      toast("改名成功：" + data.new_username);
+      closeRename();
+      if (me) me.username = data.new_username;
+      await loadMe();
+      if ($("userMask").classList.contains("show")) {
+        await openUserProfile(me.id);
+      }
+    } else {
+      $("renameInfo").className = "tip err";
+      $("renameInfo").textContent = data.error || "改名失败";
+    }
+  } catch {
+    $("renameInfo").className = "tip err";
+    $("renameInfo").textContent = "网络错误";
+  } finally {
+    btn.disabled = false;
+  }
+});
 
 // ================== 申诉弹窗 ==================
 function closeAppeal() { $("appealMask").classList.remove("show"); }
@@ -444,18 +535,18 @@ async function openAppeal() {
     if (data.ok && data.appeal) {
       const ap = data.appeal;
       if (ap.status === "pending") {
+        // 只有"处理中"才隐藏表单
         $("appealStatusBox").innerHTML = `<div class="tip ok" style="text-align:left;margin-bottom:10px">你已提交过申诉，正在处理中（提交于 ${fmtTime(ap.created_at)}）</div>`;
         $("appealForm").style.display = "none";
       } else if (ap.status === "approved") {
-        // ★ 已通过：显示管理员回信
+        // ★ 已通过也保留表单（用户可能又再次被封）
         $("appealStatusBox").innerHTML = `
-          <div class="tip ok" style="text-align:left;margin-bottom:10px">✅ 申诉已通过，账号已解封</div>
+          <div class="tip ok" style="text-align:left;margin-bottom:10px">上次申诉已通过${ap.handled_at ? "（" + fmtTime(ap.handled_at) + "）" : ""}</div>
           ${ap.admin_note ? `<div style="text-align:left;padding:10px;background:#f0fdf4;border-radius:8px;margin-bottom:10px;font-size:14px"><b>管理员回复：</b><br>${esc(ap.admin_note)}</div>` : ""}`;
-        $("appealForm").style.display = "none";
+        // 表单保留
       } else if (ap.status === "rejected") {
-        // ★ 已拒绝：显示管理员回信，可重新提交
         $("appealStatusBox").innerHTML = `
-          <div class="tip err" style="text-align:left;margin-bottom:10px">❌ 上次申诉被拒绝</div>
+          <div class="tip err" style="text-align:left;margin-bottom:10px">上次申诉被拒绝${ap.handled_at ? "（" + fmtTime(ap.handled_at) + "）" : ""}</div>
           ${ap.admin_note ? `<div style="text-align:left;padding:10px;background:#fef2f2;border-radius:8px;margin-bottom:10px;font-size:14px"><b>管理员回复：</b><br>${esc(ap.admin_note)}</div>` : ""}`;
       }
     }
@@ -491,7 +582,7 @@ $("appealForm").addEventListener("submit", async (e) => {
 // ================== ESC 关闭所有弹窗 ==================
 document.addEventListener("keydown", e => {
   if (e.key === "Escape") {
-    closeModal(); closeArticle(); closeUserProfile(); closeAppeal();
+    closeModal(); closeArticle(); closeUserProfile(); closeAppeal(); closeRename();
   }
 });
 
@@ -499,8 +590,6 @@ document.addEventListener("keydown", e => {
 function renderNav() {
   const nav = $("navActions");
   const banner = $("banBanner");
-
-  // 每次渲染前先隐藏横幅
   if (banner) banner.style.display = "none";
 
   if (!me) {
@@ -510,7 +599,6 @@ function renderNav() {
     return;
   }
 
-  // ★ 封禁用户：显示具体时间 + 顶部横幅
   if (me.banned == 1) {
     const untilText = fmtBanUntil(me.banned_until);
     nav.innerHTML = `
@@ -630,7 +718,6 @@ $("modalForm").addEventListener("submit", async function (e) {
       return;
     }
 
-    // 注册
     const res = await apiFetch("/api/register", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -659,7 +746,7 @@ async function logout() {
   toast("已退出登录");
 }
 
-// ================== 检测 URL 参数（来自 Worker 的操作结果）==================
+// ================== 检测 URL 参数 ==================
 (function checkUrlParams() {
   const p = new URLSearchParams(location.search);
   if (p.get("published") === "1") toast("✅ 发布成功！");
